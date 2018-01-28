@@ -37,7 +37,7 @@
 #include <linux/slab.h>
 
 #include "pdo_entry.h"
-
+#include "master.h"
 /*****************************************************************************/
 
 /** PDO entry constructor.
@@ -76,7 +76,7 @@ int ec_pdo_entry_init_copy(
 void ec_pdo_entry_clear(ec_pdo_entry_t *entry /**< PDO entry. */)
 {
     if (entry->name)
-        ec_free(entry->name);
+        ec_kfree(entry->name);
 }
 
 /*****************************************************************************/
@@ -97,7 +97,7 @@ int ec_pdo_entry_set_name(
         return 0;
 
     if (entry->name)
-        ec_free(entry->name);
+        ec_kfree(entry->name);
 
     if (name && (len = strlen(name))) {
         if (!(entry->name = (char *) ec_kmalloc(len + 1))) {

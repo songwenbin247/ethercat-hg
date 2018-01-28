@@ -679,6 +679,35 @@ AM_CONDITIONAL(ENABLE_RTNET, test "x$rtnet" = "x1")
 AC_SUBST(ENABLE_RTNET,[$rtnet])
 
 #------------------------------------------------------------------------------
+# Generic Rtnet driver
+#------------------------------------------------------------------------------
+
+AC_ARG_ENABLE([generic_rtnet],
+    AS_HELP_STRING([--enable-generic_rtnet],
+                   [Enable generic rtnet driver]),
+    [
+        case "${enableval}" in
+		yes) if test "x${rtnet}" = "x1"; then
+			enablegeneric_rtnet=1
+		     else
+			enablegeneric_rtnet=0
+			AC_MSG_ERROR([Invalid value for --enable-generic_rtnet, please enable rtnet first])
+		     fi
+                ;;
+            no) enablegeneric_rtnet=0
+                ;;
+            *) AC_MSG_ERROR([Invalid value for --enable-generic_rtnet])
+                ;;
+        esac
+    ],
+    [enablegeneric_rtnet=$rtnet]
+)
+
+A
+AM_CONDITIONAL(ENABLE_GENERIC_RTNET, test "x$enablegeneric_rtnet" = "x1")
+AC_SUBST(ENABLE_GENERIC_RTNET,[$enablegeneric_rtnet])
+
+#------------------------------------------------------------------------------
 # Debug interface
 #------------------------------------------------------------------------------
 

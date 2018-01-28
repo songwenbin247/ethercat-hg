@@ -74,7 +74,8 @@ static void ec_ioctl_strcpy(
     }
 }
 #ifdef EC_RTNET
-static ec_ioctl_context_t *g_ctx;
+#include "rtdm.h"
+static ec_rtdm_context_t *g_ctx;
 #define ec_copy_to_user(a, b, c)   	rtdm_safe_copy_to_user(g_ctx->rtdm_fd, (a), (b), (c))
 #define ec_copy_from_user(a, b, c)   	rtdm_safe_copy_from_user(g_ctx->rtdm_fd, (a), (b), (c))
 #define __ec_copy_to_user(a, b, c)   	rtdm_copy_to_user(g_ctx->rtdm_fd, (a), (b), (c))
@@ -836,12 +837,12 @@ static ATTRIBUTES int ec_ioctl_slave_sdo_upload(
     if (!ret) {
         if (ec_copy_to_user((void __user *) data.target,
                     target, data.data_size)) {
-            ec_free(target);
+            ec_kfree(target);
             return -EFAULT;
         }
     }
 
-    ec_free(target);
+    ec_kfree(target);
 
     if (__ec_copy_to_user((void __user *) arg, &data, sizeof(data))) {
         return -EFAULT;
@@ -876,7 +877,7 @@ static ATTRIBUTES int ec_ioctl_slave_sdo_download(
     }
 
     if (ec_copy_from_user(sdo_data, (const void __user *) data.data, data.data_size)) {
-        ec_free(sdo_data);
+        ec_kfree(sdo_data);
         return -EFAULT;
     }
 
@@ -889,7 +890,7 @@ static ATTRIBUTES int ec_ioctl_slave_sdo_download(
                 data.data_size, &data.abort_code);
     }
 
-    ec_free(sdo_data);
+    ec_kfree(sdo_data);
 
     if (__ec_copy_to_user((void __user *) arg, &data, sizeof(data))) {
         retval = -EFAULT;
@@ -980,12 +981,12 @@ static ATTRIBUTES int ec_ioctl_slave_sii_write(
 
     if (ec_copy_from_user(words,
                 (void __user *) data.words, byte_size)) {
-        ec_free(words);
+        ec_kfree(words);
         return -EFAULT;
     }
 
     if (sem_down_interruptible(&master->master_sem)) {
-        ec_free(words);
+        ec_kfree(words);
         return -EINTR;
     }
 
@@ -994,7 +995,7 @@ static ATTRIBUTES int ec_ioctl_slave_sii_write(
         sem_up(&master->master_sem);
         EC_MASTER_ERR(master, "Slave %u does not exist!\n",
                 data.slave_position);
-        ec_free(words);
+        ec_kfree(words);
         return -EINVAL;
     }
 
@@ -1020,7 +1021,7 @@ static ATTRIBUTES int ec_ioctl_slave_sii_write(
             // abort request
             list_del(&request.list);
             sem_up(&master->master_sem);
-            ec_free(words);
+            ec_kfree(words);
             return -EINTR;
         }
         sem_up(&master->master_sem);
@@ -1029,7 +1030,7 @@ static ATTRIBUTES int ec_ioctl_slave_sii_write(
     // wait until master FSM has finished processing
     ec_wait_event(master->request_queue, request.state != EC_INT_REQUEST_BUSY);
 
-    ec_free(words);
+    ec_kfree(words);
 
     return request.state == EC_INT_REQUEST_SUCCESS ? 0 : -EIO;
 }
@@ -1397,12 +1398,12 @@ static ATTRIBUTES int ec_ioctl_config_sdo(
     }
 
     if (ec_copy_from_user(ioctl, (void __user *) arg, sizeof(*ioctl))) {
-        ec_free(ioctl);
+        ec_kfree(ioctl);
         return -EFAULT;
     }
 
     if (sem_down_interruptible(&master->master_sem)) {
-        ec_free(ioctl);
+        ec_kfree(ioctl);
         return -EINTR;
     }
 
@@ -1411,7 +1412,7 @@ static ATTRIBUTES int ec_ioctl_config_sdo(
         sem_up(&master->master_sem);
         EC_MASTER_ERR(master, "Slave config %u does not exist!\n",
                 ioctl->config_index);
-        ec_free(ioctl);
+        ec_kfree(ioctl);
         return -EINVAL;
     }
 
@@ -1419,7 +1420,7 @@ static ATTRIBUTES int ec_ioctl_config_sdo(
                     sc, ioctl->sdo_pos))) {
         sem_up(&master->master_sem);
         EC_MASTER_ERR(master, "Invalid SDO position!\n");
-        ec_free(ioctl);
+        ec_kfree(ioctl);
         return -EINVAL;
     }
 
@@ -1433,11 +1434,11 @@ static ATTRIBUTES int ec_ioctl_config_sdo(
     sem_up(&master->master_sem);
 
     if (ec_copy_to_user((void __user *) arg, ioctl, sizeof(*ioctl))) {
-        ec_free(ioctl);
+        ec_kfree(ioctl);
         return -EFAULT;
     }
 
-    ec_free(ioctl);
+    ec_kfree(ioctl);
     return 0;
 }
 
@@ -1461,12 +1462,12 @@ static ATTRIBUTES int ec_ioctl_config_idn(
     }
 
     if (ec_copy_from_user(ioctl, (void __user *) arg, sizeof(*ioctl))) {
-        ec_free(ioctl);
+        ec_kfree(ioctl);
         return -EFAULT;
     }
 
     if (sem_down_interruptible(&master->master_sem)) {
-        ec_free(ioctl);
+        ec_kfree(ioctl);
         return -EINTR;
     }
 
@@ -1475,7 +1476,7 @@ static ATTRIBUTES int ec_ioctl_config_idn(
         sem_up(&master->master_sem);
         EC_MASTER_ERR(master, "Slave config %u does not exist!\n",
                 ioctl->config_index);
-        ec_free(ioctl);
+        ec_kfree(ioctl);
         return -EINVAL;
     }
 
@@ -1483,7 +1484,7 @@ static ATTRIBUTES int ec_ioctl_config_idn(
                     sc, ioctl->idn_pos))) {
         sem_up(&master->master_sem);
         EC_MASTER_ERR(master, "Invalid IDN position!\n");
-        ec_free(ioctl);
+        ec_kfree(ioctl);
         return -EINVAL;
     }
 
@@ -1497,11 +1498,11 @@ static ATTRIBUTES int ec_ioctl_config_idn(
     sem_up(&master->master_sem);
 
     if (ec_copy_to_user((void __user *) arg, ioctl, sizeof(*ioctl))) {
-        ec_free(ioctl);
+        ec_kfree(ioctl);
         return -EFAULT;
     }
 
-    ec_free(ioctl);
+    ec_kfree(ioctl);
     return 0;
 }
 
@@ -2619,18 +2620,18 @@ static ATTRIBUTES int ec_ioctl_sc_sdo(
     }
 
     if (ec_copy_from_user(sdo_data, (void __user *) data.data, data.size)) {
-        ec_free(sdo_data);
+        ec_kfree(sdo_data);
         return -EFAULT;
     }
 
     if (sem_down_interruptible(&master->master_sem)) {
-        ec_free(sdo_data);
+        ec_kfree(sdo_data);
         return -EINTR;
     }
 
     if (!(sc = ec_master_get_config(master, data.config_index))) {
         sem_up(&master->master_sem);
-        ec_free(sdo_data);
+        ec_kfree(sdo_data);
         return -ENOENT;
     }
 
@@ -2643,7 +2644,7 @@ static ATTRIBUTES int ec_ioctl_sc_sdo(
         ret = ecrt_slave_config_sdo(sc, data.index, data.subindex, sdo_data,
                 data.size);
     }
-    ec_free(sdo_data);
+    ec_kfree(sdo_data);
     return ret;
 }
 
@@ -3031,18 +3032,18 @@ static ATTRIBUTES int ec_ioctl_sc_idn(
     }
 
     if (ec_copy_from_user(data, (void __user *) ioctl.data, ioctl.size)) {
-        ec_free(data);
+        ec_kfree(data);
         return -EFAULT;
     }
 
     if (sem_down_interruptible(&master->master_sem)) {
-        ec_free(data);
+        ec_kfree(data);
         return -EINTR;
     }
 
     if (!(sc = ec_master_get_config(master, ioctl.config_index))) {
         sem_up(&master->master_sem);
-        ec_free(data);
+        ec_kfree(data);
         return -ENOENT;
     }
 
@@ -3050,7 +3051,7 @@ static ATTRIBUTES int ec_ioctl_sc_idn(
 
     ret = ecrt_slave_config_idn(
             sc, ioctl.drive_no, ioctl.idn, ioctl.al_state, data, ioctl.size);
-    ec_free(data);
+    ec_kfree(data);
     return ret;
 }
 
@@ -4158,16 +4159,16 @@ static ATTRIBUTES int ec_ioctl_slave_soe_read(
             ioctl.drive_no, ioctl.idn, data, ioctl.mem_size, &ioctl.data_size,
             &ioctl.error_code);
     if (retval) {
-        ec_free(data);
+        ec_kfree(data);
         return retval;
     }
 
     if (ec_copy_to_user((void __user *) ioctl.data,
                 data, ioctl.data_size)) {
-        ec_free(data);
+        ec_kfree(data);
         return -EFAULT;
     }
-    ec_free(data);
+    ec_kfree(data);
 
     if (__ec_copy_to_user((void __user *) arg, &ioctl, sizeof(ioctl))) {
         retval = -EFAULT;
@@ -4203,14 +4204,14 @@ static ATTRIBUTES int ec_ioctl_slave_soe_write(
         return -ENOMEM;
     }
     if (ec_copy_from_user(data, (void __user *) ioctl.data, ioctl.data_size)) {
-        ec_free(data);
+        ec_kfree(data);
         return -EFAULT;
     }
 
     retval = ecrt_master_write_idn(master, ioctl.slave_position,
             ioctl.drive_no, ioctl.idn, data, ioctl.data_size,
             &ioctl.error_code);
-    ec_free(data);
+    ec_kfree(data);
     if (retval) {
         return retval;
     }
@@ -4250,7 +4251,7 @@ long EC_IOCTL(
 #endif
     int ret;
 #ifdef EC_RTNET
-    g_ctx = ctx;
+    g_ctx = container_of(ctx, ec_rtdm_context_t, ioctl_ctx);
 #endif
     switch (cmd) {
         case EC_IOCTL_MODULE:

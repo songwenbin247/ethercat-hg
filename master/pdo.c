@@ -38,7 +38,7 @@
 #include <linux/err.h>
 
 #include "pdo.h"
-
+#include "master.h"
 /*****************************************************************************/
 
 /** PDO constructor.
@@ -94,7 +94,7 @@ out_return:
 void ec_pdo_clear(ec_pdo_t *pdo /**< EtherCAT PDO. */)
 {
     if (pdo->name)
-        ec_free(pdo->name);
+        ec_kfree(pdo->name);
 
     ec_pdo_clear_entries(pdo);
 }
@@ -111,7 +111,7 @@ void ec_pdo_clear_entries(ec_pdo_t *pdo /**< EtherCAT PDO. */)
     list_for_each_entry_safe(entry, next, &pdo->entries, list) {
         list_del(&entry->list);
         ec_pdo_entry_clear(entry);
-        ec_free(entry);
+        ec_kfree(entry);
     }
 }
 
@@ -133,7 +133,7 @@ int ec_pdo_set_name(
         return 0;
 
     if (pdo->name)
-        ec_free(pdo->name);
+        ec_kfree(pdo->name);
 
     if (name && (len = strlen(name))) {
         if (!(pdo->name = (char *) ec_kmalloc(len + 1))) {
@@ -202,7 +202,7 @@ int ec_pdo_copy_entries(
 
         ret = ec_pdo_entry_init_copy(entry, other_entry);
         if (ret < 0) {
-            ec_free(entry);
+            ec_kfree(entry);
             return ret;
         }
 

@@ -39,7 +39,7 @@
 
 #include "foe_request.h"
 #include "foe.h"
-
+#include "master.h"
 /*****************************************************************************/
 
 /** Default timeout in ms to wait for FoE transfer responses.
@@ -91,7 +91,7 @@ void ec_foe_request_clear_data(
         )
 {
     if (req->buffer) {
-        ec_free(req->buffer);
+        ec_kfree(req->buffer);
         req->buffer = NULL;
     }
 

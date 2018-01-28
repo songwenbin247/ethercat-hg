@@ -355,7 +355,7 @@ void ec_fsm_master_state_broadcast(
             if (!count) {
                 // no slaves present -> finish state machine.
                 master->scan_busy = 0;
-                wake_up_interruptible(&master->scan_queue);
+                ec_wake_up_interruptible(&master->scan_queue);
                 ec_fsm_master_restart(fsm);
                 return;
             }
@@ -366,7 +366,7 @@ void ec_fsm_master_state_broadcast(
                 EC_MASTER_ERR(master, "Failed to allocate %u bytes"
                         " of slave memory!\n", size);
                 master->scan_busy = 0;
-                wake_up_interruptible(&master->scan_queue);
+                ec_wake_up_interruptible(&master->scan_queue);
                 ec_fsm_master_restart(fsm);
                 return;
             }
@@ -1011,7 +1011,7 @@ void ec_fsm_master_state_clear_addresses(
                 ec_device_names[fsm->dev_idx != 0]);
         ec_datagram_print_state(datagram);
         master->scan_busy = 0;
-        wake_up_interruptible(&master->scan_queue);
+        ec_wake_up_interruptible(&master->scan_queue);
         ec_fsm_master_restart(fsm);
         return;
     }
@@ -1050,7 +1050,7 @@ void ec_fsm_master_state_dc_measure_delays(
                 " on %s link: ", ec_device_names[fsm->dev_idx != 0]);
         ec_datagram_print_state(datagram);
         master->scan_busy = 0;
-        wake_up_interruptible(&master->scan_queue);
+        ec_wake_up_interruptible(&master->scan_queue);
         ec_fsm_master_restart(fsm);
         return;
     }
@@ -1108,7 +1108,7 @@ void ec_fsm_master_state_scan_slave(
             EC_SLAVE_ERR(slave, "Failed to allocate EoE handler memory!\n");
         } else if (ec_eoe_init(eoe, slave)) {
             EC_SLAVE_ERR(slave, "Failed to init EoE handler!\n");
-            ec_free(eoe);
+            ec_kfree(eoe);
         } else {
             list_add_tail(&eoe->list, &master->eoe_handlers);
         }
@@ -1131,7 +1131,7 @@ void ec_fsm_master_state_scan_slave(
             (jiffies - fsm->scan_jiffies) * 1000 / HZ);
 
     master->scan_busy = 0;
-    wake_up_interruptible(&master->scan_queue);
+    ec_wake_up_interruptible(&master->scan_queue);
 
     ec_master_calc_dc(master);
 
@@ -1173,7 +1173,7 @@ void ec_fsm_master_state_configure_slave(
 
     // configuration finished
     master->config_busy = 0;
-    wake_up_interruptible(&master->config_queue);
+    ec_wake_up_interruptible(&master->config_queue);
 
     if (!ec_fsm_slave_config_success(&fsm->fsm_slave_config)) {
         // TODO: mark slave_config as failed.

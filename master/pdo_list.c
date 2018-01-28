@@ -74,7 +74,7 @@ void ec_pdo_list_clear_pdos(ec_pdo_list_t *pl /**< PDO list. */)
     list_for_each_entry_safe(pdo, next, &pl->list, list) {
         list_del_init(&pdo->list);
         ec_pdo_clear(pdo);
-        ec_free(pdo);
+        ec_kfree(pdo);
     }
 }
 
@@ -160,7 +160,7 @@ int ec_pdo_list_add_pdo_copy(
 
     ret = ec_pdo_init_copy(mapped_pdo, pdo);
     if (ret < 0) {
-        ec_free(mapped_pdo);
+        ec_kfree(mapped_pdo);
         return ret;
     }
 

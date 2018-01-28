@@ -38,10 +38,19 @@ REV := $(shell if test -s $(src)/../revision; then \
 	fi)
 
 ifeq (@ENABLE_GENERIC@,1)
+ifneq (@ENABLE_GENERIC_RTNET@,1)
 	EC_GENERIC_OBJ := generic.o
 	obj-m += ec_generic.o
 	ec_generic-objs := $(EC_GENERIC_OBJ)
 	CFLAGS_$(EC_GENERIC_OBJ) = -DREV=$(REV)
+endif
+endif
+
+ifeq (@ENABLE_GENERIC_RTNET@,1)
+	EC_GENERIC_RTNET_OBJ := generic_rtnet.o
+	obj-m += ec_generic_rtnet.o
+	ec_generic_rtnet-objs := $(EC_GENERIC_RTNET_OBJ)
+	CFLAGS_$(EC_GENERIC_RTNET_OBJ) = -DREV=$(REV) -I./drivers/xenomai/net/stack/include/ 
 endif
 
 ifeq (@ENABLE_8139TOO@,1)

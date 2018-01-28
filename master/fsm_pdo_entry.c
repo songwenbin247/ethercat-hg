@@ -311,7 +311,7 @@ void ec_fsm_pdo_entry_read_state_entry(
         if (!pdo_entry->index && !pdo_entry->subindex) {
             if (ec_pdo_entry_set_name(pdo_entry, "Gap")) {
                 ec_pdo_entry_clear(pdo_entry);
-                ec_free(pdo_entry);
+                ec_kfree(pdo_entry);
                 fsm->state = ec_fsm_pdo_entry_state_error;
                 return;
             }

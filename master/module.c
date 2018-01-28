@@ -187,12 +187,12 @@ void __exit ec_cleanup_module(void)
 
     if (master_count)
         ec_kfree(masters);
-
+#ifndef EC_RTNET
     class_destroy(class);
 
     if (master_count)
         unregister_chrdev_region(device_number, master_count);
-
+#endif
     EC_INFO("Master module cleaned up.\n");
 }
 

@@ -30,12 +30,24 @@
 
 #ifndef __EC_RTDM_H__
 #define __EC_RTDM_H__
-
+#include <rtdm/driver.h>
 #include "../include/ecrt.h" /* ec_master_t */
-
+#include "ioctl.h"
 /*****************************************************************************/
 
 struct rtdm_device;
+
+/****************************************************************************/
+
+/** Context structure for an open RTDM file handle.
+ *  */
+typedef struct {
+	    struct rtdm_fd *rtdm_fd; /**< EtherCAT RTDM device. */
+	        ec_ioctl_context_t ioctl_ctx; /**< Context structure. */
+} ec_rtdm_context_t;
+
+/****************************************************************************/
+
 
 /*****************************************************************************/
 

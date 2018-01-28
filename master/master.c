@@ -496,7 +496,7 @@ void ec_master_clear_slaves(ec_master_t *master)
         EC_MASTER_WARN(master, "Discarding SII request, slave %u about"
                 " to be deleted.\n", request->slave->ring_position);
         request->state = EC_INT_REQUEST_FAILURE;
-        wake_up_all(&master->request_queue);
+        ec_wake_up_all(&master->request_queue);
     }
 
     master->fsm_slave = NULL;
@@ -1621,7 +1621,7 @@ static int ec_master_idle_thread(void *priv_data)
         if (ec_fsm_master_idle(&master->fsm)) {
             rtdm_task_sleep(master->send_interval * 1000);
         } else {
-            rtdm_task_sleep(200000);
+            rtdm_task_sleep(500000);
         }
 #else
         if (ec_fsm_master_idle(&master->fsm)) {
@@ -1696,7 +1696,7 @@ static int ec_master_operation_thread(void *priv_data)
 		rtdm_task_sleep(master->send_interval * 1000);
 	}
 	else{
-            rtdm_task_sleep(200000);
+            rtdm_task_sleep(500000);
 	}
 	
 #else

@@ -120,35 +120,35 @@ void ec_slave_config_clear(
     list_for_each_entry_safe(req, next_req, &sc->sdo_configs, list) {
         list_del(&req->list);
         ec_sdo_request_clear(req);
-        ec_free(req);
+        ec_kfree(req);
     }
 
     // free all SDO requests
     list_for_each_entry_safe(req, next_req, &sc->sdo_requests, list) {
         list_del(&req->list);
         ec_sdo_request_clear(req);
-        ec_free(req);
+        ec_kfree(req);
     }
 
     // free all register requests
     list_for_each_entry_safe(reg, next_reg, &sc->reg_requests, list) {
         list_del(&reg->list);
         ec_reg_request_clear(reg);
-        ec_free(reg);
+        ec_kfree(reg);
     }
 
     // free all VoE handlers
     list_for_each_entry_safe(voe, next_voe, &sc->voe_handlers, list) {
         list_del(&voe->list);
         ec_voe_handler_clear(voe);
-        ec_free(voe);
+        ec_kfree(voe);
     }
 
     // free all SoE configurations
     list_for_each_entry_safe(soe, next_soe, &sc->soe_configs, list) {
         list_del(&soe->list);
         ec_soe_request_clear(soe);
-        ec_free(soe);
+        ec_kfree(soe);
     }
 
     ec_coe_emerg_ring_clear(&sc->emerg_ring);
@@ -981,7 +981,7 @@ int ecrt_slave_config_sdo(ec_slave_config_t *sc, uint16_t index,
     ret = ec_sdo_request_copy_data(req, data, size);
     if (ret < 0) {
         ec_sdo_request_clear(req);
-        ec_free(req);
+        ec_kfree(req);
         return ret;
     }
 
@@ -1066,7 +1066,7 @@ int ecrt_slave_config_complete_sdo(ec_slave_config_t *sc, uint16_t index,
     ret = ec_sdo_request_copy_data(req, data, size);
     if (ret < 0) {
         ec_sdo_request_clear(req);
-        ec_free(req);
+        ec_kfree(req);
         return ret;
     }
 
@@ -1131,7 +1131,7 @@ ec_sdo_request_t *ecrt_slave_config_create_sdo_request_err(
     ret = ec_sdo_request_alloc(req, size);
     if (ret < 0) {
         ec_sdo_request_clear(req);
-        ec_free(req);
+        ec_kfree(req);
         return ERR_PTR(ret);
     }
 
@@ -1178,7 +1178,7 @@ ec_reg_request_t *ecrt_slave_config_create_reg_request_err(
 
     ret = ec_reg_request_init(reg, size);
     if (ret) {
-        ec_free(reg);
+        ec_kfree(reg);
         return ERR_PTR(ret);
     }
 
@@ -1220,7 +1220,7 @@ ec_voe_handler_t *ecrt_slave_config_create_voe_handler_err(
 
     ret = ec_voe_handler_init(voe, sc, size);
     if (ret < 0) {
-        ec_free(voe);
+        ec_kfree(voe);
         return ERR_PTR(ret);
     }
 
@@ -1303,7 +1303,7 @@ int ecrt_slave_config_idn(ec_slave_config_t *sc, uint8_t drive_no,
     ret = ec_soe_request_copy_data(req, data, size);
     if (ret < 0) {
         ec_soe_request_clear(req);
-        ec_free(req);
+        ec_kfree(req);
         return ret;
     }
 

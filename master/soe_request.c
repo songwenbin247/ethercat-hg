@@ -38,7 +38,7 @@
 #include <linux/slab.h>
 
 #include "soe_request.h"
-
+#include "master.h"
 /*****************************************************************************/
 
 /** Default timeout in ms to wait for SoE responses.

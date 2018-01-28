@@ -46,15 +46,6 @@
 
 /****************************************************************************/
 
-/** Context structure for an open RTDM file handle.
- */
-typedef struct {
-    struct rtdm_fd *rtdm_fd; /**< EtherCAT RTDM device. */
-    ec_ioctl_context_t ioctl_ctx; /**< Context structure. */
-} ec_rtdm_context_t;
-
-/****************************************************************************/
-
 int ec_rtdm_open(struct rtdm_fd *, int);
 void ec_rtdm_close(struct rtdm_fd *);
 int ec_rtdm_ioctl(struct rtdm_fd *,unsigned int, void __user *);

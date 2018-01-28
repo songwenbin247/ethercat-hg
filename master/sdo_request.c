@@ -38,7 +38,7 @@
 #include <linux/slab.h>
 
 #include "sdo_request.h"
-
+#include "master.h"
 /*****************************************************************************/
 
 /** Default timeout in ms to wait for SDO transfer responses.
@@ -108,7 +108,7 @@ void ec_sdo_request_clear_data(
         )
 {
     if (req->data) {
-        ec_free(req->data);
+        ec_kfree(req->data);
         req->data = NULL;
     }
 

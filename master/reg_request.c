@@ -38,7 +38,7 @@
 #include <linux/slab.h>
 
 #include "reg_request.h"
-
+#include "master.h"
 /*****************************************************************************/
 
 /** Register request constructor.

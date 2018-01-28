@@ -609,7 +609,7 @@ void ec_fsm_slave_scan_state_sii_size(
 alloc_sii:
     if (slave->sii_words) {
         EC_SLAVE_WARN(slave, "Freeing old SII data...\n");
-        ec_free(slave->sii_words);
+        ec_kfree(slave->sii_words);
     }
 
     if (!(slave->sii_words =

@@ -38,7 +38,7 @@
 #include <linux/slab.h>
 
 #include "coe_emerg_ring.h"
-
+#include "master.h"
 /*****************************************************************************/
 
 /** Emergency ring buffer constructor.
