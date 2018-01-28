@@ -27,6 +27,7 @@
 #include <linux/ioport.h>
 #include <linux/crc32.h>
 
+#include "../../master/device.h"
 #include "dpaa_eth_im.h"
 #include "fsl_memac.h"
 #define MODULENAME "ec_dpaa_im"
@@ -911,6 +912,27 @@ static struct of_device_id fman_match[] =
 };
 MODULE_DEVICE_TABLE(of, fman_match);
 
+irqreturn_t fm_im_receive_irq(int irq, void *private)
+{
+    struct fm_im_private *priv;
+    struct net_device *dev;
+    u32 ievent, pending;
+    struct fm_fpm *fpm;
+
+    priv = (struct fm_im_private*)private;
+    fpm = &priv->reg->fm_fpm;
+    dev = priv->ndev;
+
+    pending = fm_im_read(&fpm->fmnpi);
+    if(!check_shared_interrupt(priv, pending))
+	  return IRQ_NONE;
+    /* Clear event register */
+    ievent = fm_im_read(&fpm->fpmfcevent[priv->fpm_event_num]); 
+    fm_im_write(&fpm->fpmcev[priv->fpm_event_num], ievent);
+    set_receive_timestamp(priv->ecdev); 
+    return IRQ_HANDLED;
+
+}
 irqreturn_t fm_im_receive(int irq, void *private)
 {
     struct fm_im_private *priv;
@@ -954,6 +976,7 @@ irqreturn_t fm_im_receive(int irq, void *private)
 	//	skb_put(skb, pkt_len);
 //		skb->dev = dev;
 			if (priv->ecdev) {
+    				set_poll_timestamp(priv->ecdev); 
 				ecdev_receive(priv->ecdev, skb->data, pkt_len);
 //				ecdev_receive(priv->ecdev, ec_skb, pkt_len);
 				// No need to detect link status as
@@ -1048,6 +1071,11 @@ static int fm_im_enet_open(struct net_device *dev)
     u32 val;
     
     priv = netdev_priv(dev);
+    err = request_irq(priv->irq, fm_im_receive_irq, IRQF_SHARED|IRQF_NO_SUSPEND, "fman_im", priv);
+    if (err < 0){
+       printk("Request irq ERROR!\n");
+    }
+
     mac = priv->mac;
     mac->set_mac_addr(mac, dev->dev_addr);
 
@@ -1199,7 +1227,7 @@ static int fm_im_start_xmit(struct sk_buff *skb, struct net_device *dev)
     priv->cur_txbd = (void *)txbd;
 
     dma_unmap_single(priv->dev, buf, skb->len, DMA_TO_DEVICE);
-
+    set_send_timestamp(priv->ecdev);
     return NETDEV_TX_OK;
 }
 
