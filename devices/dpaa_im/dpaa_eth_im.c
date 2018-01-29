@@ -905,7 +905,7 @@ int check_shared_interrupt(struct fm_im_private *priv, u32 pending)
 static struct of_device_id fman_match[] =
 {
     {
-        .compatible = "fsl,im-ethercat",
+        .compatible = "fsl,igh-ethercat",
     },
     {},
 };
@@ -919,7 +919,7 @@ irqreturn_t fm_im_receive(int irq, void *private)
     struct fm_port_global_pram *pram;
     struct fm_port_bd *rxbd, *rxbd_base;
     u16 status, offset_out;
-    u32 ievent, pending;
+    u32 event, pending;
     int pkt_len;
     struct fm_fpm *fpm;
     dma_addr_t buf;
@@ -933,14 +933,6 @@ irqreturn_t fm_im_receive(int irq, void *private)
     fpm = &priv->reg->fm_fpm;
 
     pending = fm_im_read(&fpm->fmnpi);
-	if (!priv->ecdev) {
-    	if(!check_shared_interrupt(priv, pending))
-        	return IRQ_NONE;
-
-    	/* Clear event register */
-    	ievent = fm_im_read(&fpm->fpmfcevent[priv->fpm_event_num]);
-    	fm_im_write(&fpm->fpmcev[priv->fpm_event_num], ievent);
-	}
 
     while(!(status & RxBD_EMPTY)) {
         buf_hi = muram_readw(&rxbd->buf_ptr_hi);
@@ -956,50 +948,38 @@ irqreturn_t fm_im_receive(int irq, void *private)
                 dev->stats.rx_errors++;
             else
                 dev->stats.rx_dropped++;
-			if (!priv->ecdev) {
-            	dev_kfree_skb(skb);
-			}
-            priv->rx_skbuff[priv->skb_currx] = NULL;
+        //    priv->rx_skbuff[priv->skb_currx] = NULL;
          } else {
-            pkt_len = muram_readw(&rxbd->len) - ETH_FCS_LEN;
+         	pkt_len = muram_readw(&rxbd->len) - ETH_FCS_LEN;
+	//	skb_put(skb, pkt_len);
+//		skb->dev = dev;
 			if (priv->ecdev) {
-			    ecdev_receive(priv->ecdev, priv->rx_skbuff[priv->skb_currx], pkt_len);
-			    // No need to detect link status as
-			    // long as frames are received: Reset watchdog.
-			    priv->ec_watchdog_jiffies = jiffies;
-			}
-			else
-			{
-            	skb_put(skb, pkt_len);
-            	skb->protocol = eth_type_trans(skb, dev);
-            	skb->dev = dev;
-            	netif_rx(skb);			
+				ecdev_receive(priv->ecdev, skb->data, pkt_len);
+//				ecdev_receive(priv->ecdev, ec_skb, pkt_len);
+				// No need to detect link status as
+				// long as frames are received: Reset watchdog.
+				priv->ec_watchdog_jiffies = jiffies;
+		//		dev_kfree_skb(skb);
+		//		priv->rx_skbuff[priv->skb_currx] = NULL;
 			}
             dev->stats.rx_packets ++;
             dev->stats.rx_bytes += pkt_len;
-         }
+        }
 
         /* Clear the RxBDs */
         muram_writew(&rxbd->status, RxBD_EMPTY);
         muram_writew(&rxbd->len, 0);
         mb();
-
-        skb = netdev_alloc_skb(priv->ndev, priv->rx_buffer_size + RXBUF_ALIGNMENT);
-        if (!skb) {
-            if (printk_ratelimit())
-                printk("Can't allocate Rx buffer\n");
-            dev->stats.rx_dropped++;
-            break;
-        }
-        skb_reserve(skb, RXBUF_ALIGNMENT -
-                    (((unsigned long)skb->data) & (RXBUF_ALIGNMENT - 1)));
+	
+//	skb_reserve(skb, RXBUF_ALIGNMENT -
+  //                  (((unsigned long)skb->data) & (RXBUF_ALIGNMENT - 1)));
         buf = dma_map_single(priv->dev, skb->data,
                              priv->rx_buffer_size + RXBUF_ALIGNMENT, DMA_FROM_DEVICE);
         if (dma_mapping_error(priv->dev, buf)) {
             printk("%s: %d: dma_map_single error\n", __func__, __LINE__);
             break;
         }
-        priv->rx_skbuff[priv->skb_currx] = skb;
+     //   priv->rx_skbuff[priv->skb_currx] = skb;
         muram_writew(&rxbd->buf_ptr_hi, (buf >> 32) & 0xffff);
         fm_im_write(&rxbd->buf_ptr_lo, (u32)(buf & 0xffffffff));
         mb();
@@ -1034,9 +1014,7 @@ static void ec_poll(struct net_device *dev)
 {
 	struct fm_im_private *tp = netdev_priv(dev);
 	
-	
-	fm_im_receive(IRQF_SHARED|IRQF_NO_SUSPEND, tp); // FIXME
-//		rtl_tx(dev, tp);
+	fm_im_receive(IRQF_SHARED|IRQF_NO_SUSPEND, tp); 
     
 	if (jiffies - tp->ec_watchdog_jiffies >= 2 * HZ) {
 		ecdev_set_link(tp->ecdev, tp->oldlink ? 1 : 0);
@@ -1070,11 +1048,6 @@ static int fm_im_enet_open(struct net_device *dev)
     u32 val;
     
     priv = netdev_priv(dev);
-	if (!priv->ecdev) {
-    err = request_irq(priv->irq, fm_im_receive, IRQF_SHARED|IRQF_NO_SUSPEND, "fman_im", priv);
-    if (err < 0)
-        printk("Request irq ERROR!\n");
-	}
     mac = priv->mac;
     mac->set_mac_addr(mac, dev->dev_addr);
 
@@ -1110,14 +1083,12 @@ static int fm_im_enet_open(struct net_device *dev)
 
     /* Set the MAC-PHY mode */
     mac->set_if_mode(mac, priv->interface, priv->phydev->speed);
-	if (!priv->ecdev) {
-    	netif_start_queue(dev);
-	}
 
     for(i = 0; i < 4; i++) {
         val = fm_im_read(&(&priv->reg->fm_fpm)->fpmfcevent[i]);
         TRACE("%s(): fpmfcevent[%d] = 0x%x\n", __func__, i, val);
     }
+   priv->skb_currx = 0;
     return 0;
 }
 
@@ -1151,19 +1122,12 @@ static int fm_im_close(struct net_device *dev)
 
     /* Disable bmi Rx port */
     fm_im_clrbits(&priv->rx_port->fmbm_rcfg, FMBM_RCFG_EN);
-	if (!priv->ecdev) {
- 	   /* Release irq line */
-    	free_irq(priv->irq, priv);
-	}
     /* Free skb resource */
     /* Not implemented yet */
 
     /* Disconnect from the PHY */
     phy_disconnect(priv->phydev);
     priv->phydev = NULL;
-	if (!priv->ecdev) {
-    	netif_stop_queue(dev);
-	}
     return 0;
 }
 
@@ -1186,8 +1150,6 @@ static int fm_im_start_xmit(struct sk_buff *skb, struct net_device *dev)
 
     i = priv->skb_curtx;
 
-    if (!priv->ecdev && (priv->tx_skbuff[i]))
-        dev_kfree_skb(priv->tx_skbuff[i]);
     /* Save the skb pointer so we can free it later */
     priv->tx_skbuff[i] = skb;
     /* Move forward and wrap if come to end */
@@ -1332,9 +1294,6 @@ static int fm_im_remove(struct platform_device *of_dev)
         skb = priv->rx_skbuff[i];
         buf = ((uint64_t)rxbd->buf_ptr_hi << 32) + rxbd->buf_ptr_lo;
         dma_unmap_single(priv->dev, buf, skb->len, DMA_FROM_DEVICE);
-		if (!priv->ecdev) {
-        	dev_kfree_skb(skb);
-		}
         rxbd++;
     }
     kfree( priv->rx_bd_ring);
@@ -1347,17 +1306,12 @@ static int fm_im_remove(struct platform_device *of_dev)
         skb = priv->tx_skbuff[i];
         buf = ((uint64_t)txbd->buf_ptr_hi << 32) + txbd->buf_ptr_lo;
         dma_unmap_single(priv->dev, buf, skb->len, DMA_TO_DEVICE);
-		if (!priv->ecdev) {
-        	dev_kfree_skb(skb);
-		}
     }
     kfree( priv->tx_bd_ring);
     kfree(priv->tx_skbuff);
     if (priv->ecdev) {
 		ecdev_close(priv->ecdev);
 		ecdev_withdraw(priv->ecdev);
-	} else {    
-    	unregister_netdev(priv->ndev);
 	}
     free_netdev(priv->ndev);
     
@@ -1542,13 +1496,6 @@ static int fm_im_probe(struct platform_device *of_dev)
 	// offer device to EtherCAT master module
 	priv->ecdev = ecdev_offer(net_dev, ec_poll, THIS_MODULE);
 	priv->ec_watchdog_jiffies = jiffies;
-	if (!priv->ecdev) {
-    	err = register_netdev(net_dev);
-    	if(err) {
-        	printk("%s: register net device failed.\n", net_dev->name);
-        	goto ioremap_fail;
-    	}
-	}
 	
 	if (priv->ecdev) {
 		err = ecdev_open(priv->ecdev);
