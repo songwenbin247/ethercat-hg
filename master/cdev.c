@@ -62,7 +62,7 @@ static int eccdev_mmap(struct file *, struct vm_area_struct *);
 #define PAGE_FAULT_VERSION KERNEL_VERSION(2, 6, 23)
 
 #if LINUX_VERSION_CODE >= PAGE_FAULT_VERSION
-static int eccdev_vma_fault(struct vm_area_struct *, struct vm_fault *);
+static int eccdev_vma_fault(struct vm_fault *);
 #else
 static struct page *eccdev_vma_nopage(
         struct vm_area_struct *, unsigned long, int *);
@@ -253,12 +253,11 @@ int eccdev_mmap(
  * \return Zero on success, otherwise a negative error code.
  */
 static int eccdev_vma_fault(
-        struct vm_area_struct *vma, /**< Virtual memory area. */
         struct vm_fault *vmf /**< Fault data. */
         )
 {
     unsigned long offset = vmf->pgoff << PAGE_SHIFT;
-    ec_cdev_priv_t *priv = (ec_cdev_priv_t *) vma->vm_private_data;
+    ec_cdev_priv_t *priv = (ec_cdev_priv_t *) vmf->vma->vm_private_data;
     struct page *page;
 
     if (offset >= priv->ctx.process_data_size) {
@@ -272,9 +271,6 @@ static int eccdev_vma_fault(
 
     get_page(page);
     vmf->page = page;
-
-    EC_MASTER_DBG(priv->cdev->master, 1, "Vma fault, virtual_address = %p,"
-            " offset = %lu, page = %p\n", vmf->virtual_address, offset, page);
 
     return 0;
 }

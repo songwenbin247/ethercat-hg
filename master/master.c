@@ -44,6 +44,7 @@
 #include <linux/device.h>
 #include <linux/version.h>
 #include <linux/hrtimer.h>
+#include <uapi/linux/sched/types.h>
 #include "globals.h"
 #include "slave.h"
 #include "slave_config.h"
