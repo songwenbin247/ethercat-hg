@@ -42,7 +42,6 @@
 #include <native/sem.h>
 #include <native/mutex.h>
 #include <native/timer.h>
-#include <rtdk.h>
 #include <pthread.h>
 
 #include "ecrt.h"
@@ -210,7 +209,6 @@ int main(int argc, char *argv[])
     int ret;
 
     /* Perform auto-init of rt_print buffers if the task doesn't do so */
-    rt_print_auto_init(1);
 
     signal(SIGTERM, signal_handler);
     signal(SIGINT, signal_handler);

@@ -33,27 +33,13 @@
 
 /*****************************************************************************/
 
-#ifdef USE_RTDM
-#include <rtdm/rtdm.h>
-#else
 #include <sys/ioctl.h>
-#endif
 
 /*****************************************************************************/
 
 #include "master/ioctl.h"
 
 /*****************************************************************************/
-
-#ifdef USE_RTDM
-
-#define ioctl rt_dev_ioctl
-
-/* rt_dev_ioctl() returns negative error code */
-#define EC_IOCTL_IS_ERROR(X) ((X) < 0)
-#define EC_IOCTL_ERRNO(X) (-(X))
-
-#else
 
 #define ioctl ioctl
 
@@ -63,7 +49,6 @@
 
 #include <errno.h>
 
-#endif
 
 /*****************************************************************************/
 

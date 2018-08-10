@@ -34,7 +34,7 @@
 #include <linux/slab.h>
 #include <linux/mman.h>
 
-#include <rtdm/rtdm_driver.h>
+#include <rtdm/driver.h>
 
 #include "master.h"
 #include "ioctl.h"
@@ -49,16 +49,36 @@
 /** Context structure for an open RTDM file handle.
  */
 typedef struct {
-    rtdm_user_info_t *user_info; /**< RTDM user data. */
+    struct rtdm_fd *rtdm_fd; /**< EtherCAT RTDM device. */
     ec_ioctl_context_t ioctl_ctx; /**< Context structure. */
 } ec_rtdm_context_t;
 
 /****************************************************************************/
 
-int ec_rtdm_open(struct rtdm_dev_context *, rtdm_user_info_t *, int);
-int ec_rtdm_close(struct rtdm_dev_context *, rtdm_user_info_t *);
-int ec_rtdm_ioctl(struct rtdm_dev_context *, rtdm_user_info_t *,
-        unsigned int, void __user *);
+int ec_rtdm_open(struct rtdm_fd *, int);
+void ec_rtdm_close(struct rtdm_fd *);
+int ec_rtdm_ioctl(struct rtdm_fd *,unsigned int, void __user *);
+
+#define RTSER_PROFILE_VER               3
+#define RT_ETHERCAT_MASTER_MAX          3
+static struct rtdm_driver ethercat_driver = {
+        .profile_info           = RTDM_PROFILE_INFO(ethercat,
+                                                    RTDM_CLASS_EXPERIMENTAL,
+                                                    222,
+                                                    RTSER_PROFILE_VER),
+        .device_count           = RT_ETHERCAT_MASTER_MAX,
+        .device_flags           = RTDM_NAMED_DEVICE | RTDM_EXCLUSIVE,
+        .context_size           = sizeof(ec_rtdm_context_t),
+        .ops = {
+                .open           = ec_rtdm_open,
+                .close          = ec_rtdm_close,
+        //        .ioctl_rt       = ec_rtdm_ioctl,
+                .ioctl_nrt      = ec_rtdm_ioctl,
+        //        .read_rt        = rt_imx_uart_read,
+        //        .write_rt       = rt_imx_uart_write,
+        },   
+};
+
 
 /****************************************************************************/
 
@@ -81,32 +101,16 @@ int ec_rtdm_dev_init(
         return -ENOMEM;
     }
 
-    rtdm_dev->dev->struct_version = RTDM_DEVICE_STRUCT_VER;
-    rtdm_dev->dev->device_flags = RTDM_NAMED_DEVICE;
-    rtdm_dev->dev->context_size = sizeof(ec_rtdm_context_t);
-    snprintf(rtdm_dev->dev->device_name, RTDM_MAX_DEVNAME_LEN,
-            "EtherCAT%u", master->index);
-    rtdm_dev->dev->open_nrt = ec_rtdm_open;
-    rtdm_dev->dev->ops.close_nrt = ec_rtdm_close;
-    rtdm_dev->dev->ops.ioctl_rt = ec_rtdm_ioctl;
-    rtdm_dev->dev->ops.ioctl_nrt = ec_rtdm_ioctl;
-    rtdm_dev->dev->device_class = RTDM_CLASS_EXPERIMENTAL;
-    rtdm_dev->dev->device_sub_class = 222;
-    rtdm_dev->dev->driver_name = "EtherCAT";
-    rtdm_dev->dev->driver_version = RTDM_DRIVER_VER(1, 0, 2);
-    rtdm_dev->dev->peripheral_name = rtdm_dev->dev->device_name;
-    rtdm_dev->dev->provider_name = "EtherLab Community";
-    rtdm_dev->dev->proc_name = rtdm_dev->dev->device_name;
+    rtdm_dev->dev->label = "RT_EtherCat%d";
     rtdm_dev->dev->device_data = rtdm_dev; /* pointer to parent */
-
-    EC_MASTER_INFO(master, "Registering RTDM device %s.\n",
-            rtdm_dev->dev->driver_name);
+    rtdm_dev->dev->driver = &ethercat_driver;
     ret = rtdm_dev_register(rtdm_dev->dev);
     if (ret) {
         EC_MASTER_ERR(master, "Initialization of RTDM interface failed"
                 " (return value %i).\n", ret);
         kfree(rtdm_dev->dev);
     }
+    EC_MASTER_INFO(master, "Registering RTDM device %s.\n", rtdm_dev->dev->name);
 
     return ret;
 }
@@ -119,16 +123,9 @@ void ec_rtdm_dev_clear(
         ec_rtdm_dev_t *rtdm_dev /**< EtherCAT RTDM device. */
         )
 {
-    int ret;
-
     EC_MASTER_INFO(rtdm_dev->master, "Unregistering RTDM device %s.\n",
-            rtdm_dev->dev->driver_name);
-    ret = rtdm_dev_unregister(rtdm_dev->dev, 1000 /* poll delay [ms] */);
-    if (ret < 0) {
-        EC_MASTER_WARN(rtdm_dev->master,
-                "Failed to unregister RTDM device (code %i).\n", ret);
-    }
-
+            rtdm_dev->dev->name);
+    rtdm_dev_unregister(rtdm_dev->dev);
     kfree(rtdm_dev->dev);
 }
 
@@ -139,25 +136,22 @@ void ec_rtdm_dev_clear(
  * \return Always zero (success).
  */
 int ec_rtdm_open(
-        struct rtdm_dev_context *context, /**< Context. */
-        rtdm_user_info_t *user_info, /**< User data. */
+	struct rtdm_fd *fd,
         int oflags /**< Open flags. */
         )
 {
-    ec_rtdm_context_t *ctx = (ec_rtdm_context_t *) context->dev_private;
-#if DEBUG
-    ec_rtdm_dev_t *rtdm_dev = (ec_rtdm_dev_t *) context->device->device_data;
-#endif
+    ec_rtdm_context_t *ctx = rtdm_fd_to_private(fd);
 
-    ctx->user_info = user_info;
+    ctx->rtdm_fd = fd;
     ctx->ioctl_ctx.writable = oflags & O_WRONLY || oflags & O_RDWR;
     ctx->ioctl_ctx.requested = 0;
     ctx->ioctl_ctx.process_data = NULL;
     ctx->ioctl_ctx.process_data_size = 0;
 
 #if DEBUG
+    ec_rtdm_dev_t *rtdm_dev = (ec_rtdm_dev_t *)rtdm_fd_device(fd)->device_data;
     EC_MASTER_INFO(rtdm_dev->master, "RTDM device %s opened.\n",
-            context->device->device_name);
+            rtdm_dev->dev->name);
 #endif
     return 0;
 }
@@ -168,23 +162,19 @@ int ec_rtdm_open(
  *
  * \return Always zero (success).
  */
-int ec_rtdm_close(
-        struct rtdm_dev_context *context, /**< Context. */
-        rtdm_user_info_t *user_info /**< User data. */
-        )
+void ec_rtdm_close( struct rtdm_fd *fd )
 {
-    ec_rtdm_context_t *ctx = (ec_rtdm_context_t *) context->dev_private;
-    ec_rtdm_dev_t *rtdm_dev = (ec_rtdm_dev_t *) context->device->device_data;
+    ec_rtdm_context_t *ctx = rtdm_fd_to_private(fd);
+    ec_rtdm_dev_t *rtdm_dev = (ec_rtdm_dev_t *)rtdm_fd_device(fd)->device_data;
 
     if (ctx->ioctl_ctx.requested) {
         ecrt_release_master(rtdm_dev->master);
 	}
-
+    ctx->rtdm_fd = NULL;
 #if DEBUG
     EC_MASTER_INFO(rtdm_dev->master, "RTDM device %s closed.\n",
-            context->device->device_name);
+            rtdm_dev->dev->name);
 #endif
-    return 0;
 }
 
 /****************************************************************************/
@@ -194,19 +184,18 @@ int ec_rtdm_close(
  * \return ioctl() return code.
  */
 int ec_rtdm_ioctl(
-        struct rtdm_dev_context *context, /**< Context. */
-        rtdm_user_info_t *user_info, /**< User data. */
+        struct rtdm_fd *fd,
         unsigned int request, /**< Request. */
         void __user *arg /**< Argument. */
         )
 {
-    ec_rtdm_context_t *ctx = (ec_rtdm_context_t *) context->dev_private;
-    ec_rtdm_dev_t *rtdm_dev = (ec_rtdm_dev_t *) context->device->device_data;
+    ec_rtdm_context_t *ctx = rtdm_fd_to_private(fd);
+    ec_rtdm_dev_t *rtdm_dev = (ec_rtdm_dev_t *)rtdm_fd_device(fd)->device_data;
 
 #if DEBUG
     EC_MASTER_INFO(rtdm_dev->master, "ioctl(request = %u, ctl = %02x)"
             " on RTDM device %s.\n", request, _IOC_NR(request),
-            context->device->device_name);
+            rtdm_dev->dev->name);
 #endif
     return ec_ioctl_rtdm(rtdm_dev->master, &ctx->ioctl_ctx, request, arg);
 }
@@ -226,7 +215,7 @@ int ec_rtdm_mmap(
         container_of(ioctl_ctx, ec_rtdm_context_t, ioctl_ctx);
     int ret;
 
-    ret = rtdm_mmap_to_user(ctx->user_info,
+    ret = rtdm_mmap_to_user(ctx->rtdm_fd,
             ioctl_ctx->process_data, ioctl_ctx->process_data_size,
             PROT_READ | PROT_WRITE,
             user_address,
