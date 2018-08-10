@@ -88,17 +88,13 @@ ec_master_t *ecrt_open_master(unsigned int master_index)
 
     snprintf(path, MAX_PATH_LEN - 1,
 #ifdef USE_RTDM
-            "EtherCAT%u",
+            "/dev/rtdm/RT_EtherCAT%u",
 #else
             "/dev/EtherCAT%u",
 #endif
             master_index);
 
-#ifdef USE_RTDM
-    master->fd = rt_dev_open(path, O_RDWR);
-#else
     master->fd = open(path, O_RDWR);
-#endif
     if (EC_IOCTL_IS_ERROR(master->fd)) {
         fprintf(stderr, "Failed to open %s: %s\n", path,
                 strerror(EC_IOCTL_ERRNO(master->fd)));
