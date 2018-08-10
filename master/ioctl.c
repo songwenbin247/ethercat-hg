@@ -4242,506 +4242,506 @@ long EC_IOCTL(
     switch (cmd) {
         case EC_IOCTL_MODULE:
             ret = ec_ioctl_module(arg);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_MASTER:
             ret = ec_ioctl_master(master, arg);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_SLAVE:
             ret = ec_ioctl_slave(master, arg);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_SLAVE_SYNC:
             ret = ec_ioctl_slave_sync(master, arg);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_SLAVE_SYNC_PDO:
             ret = ec_ioctl_slave_sync_pdo(master, arg);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_SLAVE_SYNC_PDO_ENTRY:
             ret = ec_ioctl_slave_sync_pdo_entry(master, arg);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_DOMAIN:
             ret = ec_ioctl_domain(master, arg);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_DOMAIN_FMMU:
             ret = ec_ioctl_domain_fmmu(master, arg);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_DOMAIN_DATA:
             ret = ec_ioctl_domain_data(master, arg);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_MASTER_DEBUG:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_master_debug(master, arg);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_MASTER_RESCAN:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_master_rescan(master, arg);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_SLAVE_STATE:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_slave_state(master, arg);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_SLAVE_SDO:
             ret = ec_ioctl_slave_sdo(master, arg);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_SLAVE_SDO_ENTRY:
             ret = ec_ioctl_slave_sdo_entry(master, arg);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_SLAVE_SDO_UPLOAD:
             ret = ec_ioctl_slave_sdo_upload(master, arg);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_SLAVE_SDO_DOWNLOAD:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_slave_sdo_download(master, arg);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_SLAVE_SII_READ:
             ret = ec_ioctl_slave_sii_read(master, arg);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_SLAVE_SII_WRITE:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_slave_sii_write(master, arg);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_SLAVE_REG_READ:
             ret = ec_ioctl_slave_reg_read(master, arg);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_SLAVE_REG_WRITE:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_slave_reg_write(master, arg);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_SLAVE_FOE_READ:
             ret = ec_ioctl_slave_foe_read(master, arg);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_SLAVE_FOE_WRITE:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_slave_foe_write(master, arg);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_SLAVE_SOE_READ:
             ret = ec_ioctl_slave_soe_read(master, arg);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_SLAVE_EOE_IP_PARAM:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_slave_eoe_ip_param(master, arg);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_SLAVE_SOE_WRITE:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_slave_soe_write(master, arg);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_CONFIG:
             ret = ec_ioctl_config(master, arg);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_CONFIG_PDO:
             ret = ec_ioctl_config_pdo(master, arg);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_CONFIG_PDO_ENTRY:
             ret = ec_ioctl_config_pdo_entry(master, arg);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_CONFIG_SDO:
             ret = ec_ioctl_config_sdo(master, arg);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_CONFIG_IDN:
             ret = ec_ioctl_config_idn(master, arg);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
 #ifdef EC_EOE
         case EC_IOCTL_EOE_HANDLER:
             ret = ec_ioctl_eoe_handler(master, arg);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
 #endif
         case EC_IOCTL_REQUEST:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_request(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_CREATE_DOMAIN:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_create_domain(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_CREATE_SLAVE_CONFIG:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_create_slave_config(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_SELECT_REF_CLOCK:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_select_ref_clock(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_ACTIVATE:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_activate(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_DEACTIVATE:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_deactivate(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_SEND:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_send(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_RECEIVE:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_receive(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_MASTER_STATE:
             ret = ec_ioctl_master_state(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_MASTER_LINK_STATE:
             ret = ec_ioctl_master_link_state(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_APP_TIME:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_app_time(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_SYNC_REF:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_sync_ref(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_SYNC_SLAVES:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_sync_slaves(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_REF_CLOCK_TIME:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_ref_clock_time(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_SYNC_MON_QUEUE:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_sync_mon_queue(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_SYNC_MON_PROCESS:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_sync_mon_process(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_RESET:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_reset(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_SC_SYNC:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_sc_sync(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_SC_WATCHDOG:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_sc_watchdog(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_SC_OVERLAPPING_IO:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_sc_allow_overlapping_pdos(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_SC_ADD_PDO:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_sc_add_pdo(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_SC_CLEAR_PDOS:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_sc_clear_pdos(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_SC_ADD_ENTRY:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_sc_add_entry(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_SC_CLEAR_ENTRIES:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_sc_clear_entries(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_SC_REG_PDO_ENTRY:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_sc_reg_pdo_entry(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_SC_REG_PDO_POS:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_sc_reg_pdo_pos(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_SC_DC:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_sc_dc(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_SC_SDO:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_sc_sdo(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_SC_EMERG_SIZE:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_sc_emerg_size(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_SC_EMERG_POP:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_sc_emerg_pop(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_SC_EMERG_CLEAR:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_sc_emerg_clear(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_SC_EMERG_OVERRUNS:
             ret = ec_ioctl_sc_emerg_overruns(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_SC_SDO_REQUEST:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_sc_create_sdo_request(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_SC_REG_REQUEST:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_sc_create_reg_request(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_SC_VOE:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_sc_create_voe_handler(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_SC_STATE:
             ret = ec_ioctl_sc_state(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_SC_IDN:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_sc_idn(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_DOMAIN_SIZE:
             ret = ec_ioctl_domain_size(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_DOMAIN_OFFSET:
             ret = ec_ioctl_domain_offset(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_DOMAIN_PROCESS:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_domain_process(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_DOMAIN_QUEUE:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_domain_queue(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_DOMAIN_STATE:
             ret = ec_ioctl_domain_state(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_SDO_REQUEST_INDEX:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_sdo_request_index(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_SDO_REQUEST_TIMEOUT:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_sdo_request_timeout(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_SDO_REQUEST_STATE:
             ret = ec_ioctl_sdo_request_state(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_SDO_REQUEST_READ:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_sdo_request_read(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_SDO_REQUEST_WRITE:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_sdo_request_write(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_SDO_REQUEST_DATA:
             ret = ec_ioctl_sdo_request_data(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_REG_REQUEST_DATA:
             ret = ec_ioctl_reg_request_data(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_REG_REQUEST_STATE:
             ret = ec_ioctl_reg_request_state(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_REG_REQUEST_WRITE:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_reg_request_write(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_REG_REQUEST_READ:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_reg_request_read(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_VOE_SEND_HEADER:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_voe_send_header(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_VOE_REC_HEADER:
             ret = ec_ioctl_voe_rec_header(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_VOE_READ:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_voe_read(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_VOE_READ_NOSYNC:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_voe_read_nosync(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_VOE_WRITE:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_voe_write(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_VOE_EXEC:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_voe_exec(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_VOE_DATA:
             ret = ec_ioctl_voe_data(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         case EC_IOCTL_SET_SEND_INTERVAL:
             if (!ctx->writable) {
                 ret = -EPERM;
-                break;
+                printk("---->%s %d\n", __func__, __LINE__); break;
             }
             ret = ec_ioctl_set_send_interval(master, arg, ctx);
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
         default:
             ret = -ENOTTY;
-            break;
+            printk("---->%s %d\n", __func__, __LINE__); break;
     }
 
 #if DEBUG_LATENCY
