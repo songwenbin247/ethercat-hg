@@ -34,7 +34,6 @@
 obj-m := ec_master.o
 
 ec_master-objs := \
-	cdev.o \
 	coe_emerg_ring.o \
 	datagram.o \
 	datagram_pair.o \
@@ -73,6 +72,10 @@ ec_master-objs := \
 	sync.o \
 	sync_config.o \
 	voe_handler.o
+
+ifneq (@ENABLE_RTNET@,1)
+ec_master-objs += cdev.o
+endif	
 
 ifeq (@ENABLE_EOE@,1)
 ec_master-objs += ethernet.o

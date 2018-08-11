@@ -97,14 +97,20 @@ const unsigned int rate_intervals[] = {
 
 void ec_master_clear_slave_configs(ec_master_t *);
 void ec_master_clear_domains(ec_master_t *);
-static int ec_master_idle_thread(void *);
-static int ec_master_operation_thread(void *);
 #ifdef EC_EOE
 static int ec_master_eoe_thread(void *);
 #endif
 void ec_master_find_dc_ref_clock(ec_master_t *);
 void ec_master_clear_device_stats(ec_master_t *);
 void ec_master_update_device_stats(ec_master_t *);
+
+#ifdef EC_RTNET
+static void ec_master_idle_thread(void *);
+static void ec_master_operation_thread(void *);
+#else
+static int ec_master_idle_thread(void *);
+static int ec_master_operation_thread(void *);
+#endif
 
 /*****************************************************************************/
 
@@ -146,7 +152,7 @@ int ec_master_init(ec_master_t *master, /**< EtherCAT master */
     master->index = index;
     master->reserved = 0;
 
-    sema_init(&master->master_sem, 1);
+    ec_sema_init(&master->master_sem, 1);
 
     for (dev_idx = EC_DEVICE_MAIN; dev_idx < EC_MAX_NUM_DEVICES; dev_idx++) {
         master->macs[dev_idx] = NULL;
@@ -165,7 +171,7 @@ int ec_master_init(ec_master_t *master, /**< EtherCAT master */
 
     ec_master_clear_device_stats(master);
 
-    sema_init(&master->device_sem, 1);
+    ec_sema_init(&master->device_sem, 1);
 
     master->phase = EC_ORPHANED;
     master->active = 0;
@@ -185,18 +191,18 @@ int ec_master_init(ec_master_t *master, /**< EtherCAT master */
 
     master->scan_busy = 0;
     master->allow_scan = 1;
-    sema_init(&master->scan_sem, 1);
+    ec_sema_init(&master->scan_sem, 1);
     init_waitqueue_head(&master->scan_queue);
 
     master->config_busy = 0;
-    sema_init(&master->config_sem, 1);
+    ec_sema_init(&master->config_sem, 1);
     init_waitqueue_head(&master->config_queue);
 
     INIT_LIST_HEAD(&master->datagram_queue);
     master->datagram_index = 0;
 
     INIT_LIST_HEAD(&master->ext_datagram_queue);
-    sema_init(&master->ext_queue_sem, 1);
+    ec_sema_init(&master->ext_queue_sem, 1);
 
     master->ext_ring_idx_rt = 0;
     master->ext_ring_idx_fsm = 0;
@@ -220,7 +226,6 @@ int ec_master_init(ec_master_t *master, /**< EtherCAT master */
     master->stats.corrupted = 0;
     master->stats.unmatched = 0;
     master->stats.output_jiffies = 0;
-
     master->thread = NULL;
 
 #ifdef EC_EOE
@@ -228,7 +233,7 @@ int ec_master_init(ec_master_t *master, /**< EtherCAT master */
     INIT_LIST_HEAD(&master->eoe_handlers);
 #endif
 
-    sema_init(&master->io_sem, 1);
+    ec_sema_init(&master->io_sem, 1);
     master->send_cb = NULL;
     master->receive_cb = NULL;
     master->cb_data = NULL;
@@ -312,6 +317,7 @@ int ec_master_init(ec_master_t *master, /**< EtherCAT master */
     master->dc_ref_config = NULL;
     master->dc_ref_clock = NULL;
 
+#ifndef EC_RTNET
     // init character device
     ret = ec_cdev_init(&master->cdev, master, device_number);
     if (ret)
@@ -339,6 +345,7 @@ int ec_master_init(ec_master_t *master, /**< EtherCAT master */
         ret = PTR_ERR(master->class_device);
         goto out_clear_cdev;
     }
+#endif
 
 #ifdef EC_RTDM
     // init RTDM device
@@ -352,15 +359,19 @@ int ec_master_init(ec_master_t *master, /**< EtherCAT master */
 
 #ifdef EC_RTDM
 out_unregister_class_device:
+#ifndef EC_RTNET
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 26)
     device_unregister(master->class_device);
 #else
     class_device_unregister(master->class_device);
 #endif
 #endif
+#endif
+#ifndef EC_RTNET
 out_clear_cdev:
     ec_cdev_clear(&master->cdev);
 out_clear_sync_mon:
+#endif
     ec_datagram_clear(&master->sync_mon_datagram);
 out_clear_sync:
     ec_datagram_clear(&master->sync_datagram);
@@ -393,6 +404,7 @@ void ec_master_clear(
     ec_rtdm_dev_clear(&master->rtdm_dev);
 #endif
 
+#ifndef EC_RTNET
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 26)
     device_unregister(master->class_device);
 #else
@@ -400,6 +412,7 @@ void ec_master_clear(
 #endif
 
     ec_cdev_clear(&master->cdev);
+#endif
 
 #ifdef EC_EOE
     ec_master_clear_eoe_handlers(master);
@@ -527,10 +540,10 @@ void ec_master_clear_config(
         ec_master_t *master /**< EtherCAT master. */
         )
 {
-    down(&master->master_sem);
+    sem_down(&master->master_sem);
     ec_master_clear_domains(master);
     ec_master_clear_slave_configs(master);
-    up(&master->master_sem);
+    sem_up(&master->master_sem);
 }
 
 /*****************************************************************************/
@@ -542,9 +555,9 @@ void ec_master_internal_send_cb(
         )
 {
     ec_master_t *master = (ec_master_t *) cb_data;
-    down(&master->io_sem);
+    sem_down(&master->io_sem);
     ecrt_master_send_ext(master);
-    up(&master->io_sem);
+    sem_up(&master->io_sem);
 }
 
 /*****************************************************************************/
@@ -556,9 +569,9 @@ void ec_master_internal_receive_cb(
         )
 {
     ec_master_t *master = (ec_master_t *) cb_data;
-    down(&master->io_sem);
+    sem_down(&master->io_sem);
     ecrt_master_receive(master);
-    up(&master->io_sem);
+    sem_up(&master->io_sem);
 }
 
 /*****************************************************************************/
@@ -568,22 +581,47 @@ void ec_master_internal_receive_cb(
  * \retval  0 Success.
  * \retval <0 Error code.
  */
+#ifdef EC_RTNET
+int ec_master_thread_start(
+        ec_master_t *master, /**< EtherCAT master */
+        void (*thread_func)(void *), /**< thread function to start */
+        const char *name /**< Thread name. */
+        )
+#else
 int ec_master_thread_start(
         ec_master_t *master, /**< EtherCAT master */
         int (*thread_func)(void *), /**< thread function to start */
         const char *name /**< Thread name. */
         )
+#endif
 {
+    int err;
     EC_MASTER_INFO(master, "Starting %s thread.\n", name);
+#ifdef EC_RTNET
+    	master->thread = (rtdm_task_t *) kmalloc(sizeof(rtdm_task_t), GFP_KERNEL);  
+	if (!master->thread){
+		EC_MASTER_ERR(master, "Filed to kmalloc memory for master task!\n");
+		return -ENOMEM;
+	
+	}
+	if ((err = rtdm_task_init(master->thread, name, thread_func, master,
+				  RTDM_TASK_HIGHEST_PRIORITY-3,0 )) != 0) {
+		EC_MASTER_ERR(master, "Failed to start master task!\n");
+		return -1;
+	}
+
+#else
     master->thread = kthread_run(thread_func, master, name);
     if (IS_ERR(master->thread)) {
-        int err = (int) PTR_ERR(master->thread);
+        err = (int) PTR_ERR(master->thread);
         EC_MASTER_ERR(master, "Failed to start master thread (error %i)!\n",
                 err);
         master->thread = NULL;
         return err;
     }
-
+#endif
+    
+    EC_MASTER_INFO(master,"start master task %s Successful", name);
     return 0;
 }
 
@@ -603,18 +641,25 @@ void ec_master_thread_stop(
     }
 
     EC_MASTER_DBG(master, 1, "Stopping master thread.\n");
-
+#ifdef EC_RTNET
+    rtdm_task_destroy(master->thread);
+    kfree(master->thread);
+#else
     kthread_stop(master->thread);
+#endif
     master->thread = NULL;
     EC_MASTER_INFO(master, "Master thread exited.\n");
 
     if (master->fsm_datagram.state != EC_DATAGRAM_SENT) {
         return;
     }
-
-    // wait for FSM datagram
     sleep_jiffies = max(HZ / 100, 1); // 10 ms, at least 1 jiffy
+#ifdef EC_RTNET
+    rtdm_task_sleep((nanosecs_rel_t)(sleep_jiffies * (1000000000L / HZ)));
+#else
+    // wait for FSM datagram
     schedule_timeout(sleep_jiffies);
+#endif
 }
 
 /*****************************************************************************/
@@ -667,9 +712,9 @@ void ec_master_leave_idle_phase(ec_master_t *master /**< EtherCAT master */)
 #endif
     ec_master_thread_stop(master);
 
-    down(&master->master_sem);
+    sem_down(&master->master_sem);
     ec_master_clear_slaves(master);
-    up(&master->master_sem);
+    sem_up(&master->master_sem);
 
     ec_fsm_master_reset(&master->fsm);
 }
@@ -689,9 +734,9 @@ int ec_master_enter_operation_phase(
 
     EC_MASTER_DBG(master, 1, "IDLE -> OPERATION.\n");
 
-    down(&master->config_sem);
+    sem_down(&master->config_sem);
     if (master->config_busy) {
-        up(&master->config_sem);
+        sem_up(&master->config_sem);
 
         // wait for slave configuration to complete
         ret = wait_event_interruptible(master->config_queue,
@@ -705,15 +750,15 @@ int ec_master_enter_operation_phase(
         EC_MASTER_DBG(master, 1, "Waiting for pending slave"
                 " configuration returned.\n");
     } else {
-        up(&master->config_sem);
+        sem_up(&master->config_sem);
     }
 
-    down(&master->scan_sem);
+    sem_down(&master->scan_sem);
     master->allow_scan = 0; // 'lock' the slave list
     if (!master->scan_busy) {
-        up(&master->scan_sem);
+        sem_up(&master->scan_sem);
     } else {
-        up(&master->scan_sem);
+        sem_up(&master->scan_sem);
 
         // wait for slave scan to complete
         ret = wait_event_interruptible(master->scan_queue,
@@ -961,9 +1006,9 @@ void ec_master_queue_datagram_ext(
         ec_datagram_t *datagram /**< datagram */
         )
 {
-    down(&master->ext_queue_sem);
+    sem_down(&master->ext_queue_sem);
     list_add_tail(&datagram->queue, &master->ext_datagram_queue);
-    up(&master->ext_queue_sem);
+    sem_up(&master->ext_queue_sem);
 }
 
 /*****************************************************************************/
@@ -1363,7 +1408,7 @@ void ec_master_update_device_stats(
 /*
  * Sleep related functions:
  */
-static enum hrtimer_restart ec_master_nanosleep_wakeup(struct hrtimer *timer)
+static enum hrtimer_restart ec_master_nanosleep_wakesem_up(struct hrtimer *timer)
 {
     struct hrtimer_sleeper *t =
         container_of(timer, struct hrtimer_sleeper, timer);
@@ -1525,7 +1570,11 @@ void ec_master_exec_slave_fsms(
 
 /** Master kernel thread function for IDLE phase.
  */
+#ifdef EC_RTNET
+static void ec_master_idle_thread(void *priv_data)
+#else
 static int ec_master_idle_thread(void *priv_data)
+#endif
 {
     ec_master_t *master = (ec_master_t *) priv_data;
     int fsm_exec;
@@ -1537,17 +1586,20 @@ static int ec_master_idle_thread(void *priv_data)
     EC_MASTER_DBG(master, 1, "Idle thread running with send interval = %u us,"
             " max data size=%zu\n", master->send_interval,
             master->max_queue_size);
-
+#ifdef EC_RTNET
+    while (!rtdm_task_should_stop()) {
+#else
     while (!kthread_should_stop()) {
+#endif
         ec_datagram_output_stats(&master->fsm_datagram);
 
         // receive
-        down(&master->io_sem);
+        sem_down(&master->io_sem);
         ecrt_master_receive(master);
-        up(&master->io_sem);
+        sem_up(&master->io_sem);
 
         // execute master & slave state machines
-        if (down_interruptible(&master->master_sem)) {
+        if (sem_down_interruptible(&master->master_sem)) {
             break;
         }
 
@@ -1555,16 +1607,23 @@ static int ec_master_idle_thread(void *priv_data)
 
         ec_master_exec_slave_fsms(master);
 
-        up(&master->master_sem);
+        sem_up(&master->master_sem);
 
         // queue and send
-        down(&master->io_sem);
+        sem_down(&master->io_sem);
         if (fsm_exec) {
             ec_master_queue_datagram(master, &master->fsm_datagram);
         }
         sent_bytes = ecrt_master_send(master);
-        up(&master->io_sem);
+        sem_up(&master->io_sem);
 
+#ifdef EC_RTNET
+        if (ec_fsm_master_idle(&master->fsm)) {
+            rtdm_task_sleep(master->send_interval * 1000);
+        } else {
+            rtdm_task_sleep(200000);
+        }
+#else
         if (ec_fsm_master_idle(&master->fsm)) {
 #ifdef EC_USE_HRTIMER
             ec_master_nanosleep(master->send_interval * 1000);
@@ -1580,18 +1639,24 @@ static int ec_master_idle_thread(void *priv_data)
             schedule();
 #endif
         }
+#endif
     }
 
     EC_MASTER_DBG(master, 1, "Master IDLE thread exiting...\n");
-
+#ifndef EC_RTNET
     return 0;
+#endif
 }
 
 /*****************************************************************************/
 
 /** Master kernel thread function for OPERATION phase.
  */
+#ifdef EC_RTNET
+static void ec_master_operation_thread(void *priv_data)
+#else
 static int ec_master_operation_thread(void *priv_data)
+#endif
 {
     ec_master_t *master = (ec_master_t *) priv_data;
 
@@ -1599,7 +1664,11 @@ static int ec_master_operation_thread(void *priv_data)
             " with fsm interval = %u us, max data size=%zu\n",
             master->send_interval, master->max_queue_size);
 
+#ifdef EC_RTNET
+    while (!rtdm_task_should_stop()) {
+#else
     while (!kthread_should_stop()) {
+#endif
         ec_datagram_output_stats(&master->fsm_datagram);
 
         if (master->injection_seq_rt == master->injection_seq_fsm) {
@@ -1607,7 +1676,7 @@ static int ec_master_operation_thread(void *priv_data)
             ec_master_output_stats(master);
 
             // execute master & slave state machines
-            if (down_interruptible(&master->master_sem)) {
+            if (sem_down_interruptible(&master->master_sem)) {
                 break;
             }
 
@@ -1619,9 +1688,18 @@ static int ec_master_operation_thread(void *priv_data)
 
             ec_master_exec_slave_fsms(master);
 
-            up(&master->master_sem);
+            sem_up(&master->master_sem);
         }
 
+#ifdef EC_RTNET
+        if (ec_fsm_master_idle(&master->fsm)) {
+		rtdm_task_sleep(master->send_interval * 1000);
+	}
+	else{
+            rtdm_task_sleep(200000);
+	}
+	
+#else
 #ifdef EC_USE_HRTIMER
         // the op thread should not work faster than the sending RT thread
         ec_master_nanosleep(master->send_interval * 1000);
@@ -1634,10 +1712,12 @@ static int ec_master_operation_thread(void *priv_data)
             schedule();
         }
 #endif
+#endif
     }
-
     EC_MASTER_DBG(master, 1, "Master OP thread exiting...\n");
+#ifndef EC_RTNET
     return 0;
+#endif
 }
 
 /*****************************************************************************/
@@ -1740,9 +1820,9 @@ static int ec_master_eoe_thread(void *priv_data)
                 ec_eoe_queue(eoe);
             }
             // (try to) send datagrams
-            down(&master->ext_queue_sem);
+            sem_down(&master->ext_queue_sem);
             master->send_cb(master->cb_data);
-            up(&master->ext_queue_sem);
+            sem_up(&master->ext_queue_sem);
         }
 
 schedule:
@@ -2262,7 +2342,7 @@ ec_domain_t *ecrt_master_create_domain_err(
         return ERR_PTR(-ENOMEM);
     }
 
-    down(&master->master_sem);
+    sem_down(&master->master_sem);
 
     if (list_empty(&master->domains)) {
         index = 0;
@@ -2274,7 +2354,7 @@ ec_domain_t *ecrt_master_create_domain_err(
     ec_domain_init(domain, master, index);
     list_add_tail(&domain->list, &master->domains);
 
-    up(&master->master_sem);
+    sem_up(&master->master_sem);
 
     EC_MASTER_DBG(master, 1, "Created domain %u.\n", domain->index);
 
@@ -2309,21 +2389,21 @@ int ecrt_master_activate(ec_master_t *master)
         return 0;
     }
 
-    down(&master->master_sem);
+    sem_down(&master->master_sem);
 
     // finish all domains
     domain_offset = 0;
     list_for_each_entry(domain, &master->domains, list) {
         ret = ec_domain_finish(domain, domain_offset);
         if (ret < 0) {
-            up(&master->master_sem);
+            sem_up(&master->master_sem);
             EC_MASTER_ERR(master, "Failed to finish domain 0x%p!\n", domain);
             return ret;
         }
         domain_offset += domain->data_size;
     }
 
-    up(&master->master_sem);
+    sem_up(&master->master_sem);
 
     // restart EoE process and master thread with new locking
 
@@ -2599,14 +2679,14 @@ ec_slave_config_t *ecrt_master_slave_config_err(ec_master_t *master,
         ec_slave_config_init(sc, master,
                 alias, position, vendor_id, product_code);
 
-        down(&master->master_sem);
+        sem_down(&master->master_sem);
 
         // try to find the addressed slave
         ec_slave_config_attach(sc);
         ec_slave_config_load_default_sync_config(sc);
         list_add_tail(&sc->list, &master->configs);
 
-        up(&master->master_sem);
+        sem_up(&master->master_sem);
     }
 
     return sc;
@@ -2666,7 +2746,7 @@ int ecrt_master_get_slave(ec_master_t *master, uint16_t slave_position,
     unsigned int i;
     int ret = 0;
 
-    if (down_interruptible(&master->master_sem)) {
+    if (sem_down_interruptible(&master->master_sem)) {
         return -EINTR;
     }
 
@@ -2714,7 +2794,7 @@ int ecrt_master_get_slave(ec_master_t *master, uint16_t slave_position,
     }
 
 out_get_slave:
-    up(&master->master_sem);
+    sem_up(&master->master_sem);
 
     return ret;
 }
@@ -2875,13 +2955,13 @@ int ecrt_master_sdo_download(ec_master_t *master, uint16_t slave_position,
     request.data_size = data_size;
     ecrt_sdo_request_write(&request);
 
-    if (down_interruptible(&master->master_sem)) {
+    if (sem_down_interruptible(&master->master_sem)) {
         ec_sdo_request_clear(&request);
         return -EINTR;
     }
 
     if (!(slave = ec_master_find_slave(master, 0, slave_position))) {
-        up(&master->master_sem);
+        sem_up(&master->master_sem);
         EC_MASTER_ERR(master, "Slave %u does not exist!\n", slave_position);
         ec_sdo_request_clear(&request);
         return -EINVAL;
@@ -2892,21 +2972,21 @@ int ecrt_master_sdo_download(ec_master_t *master, uint16_t slave_position,
     // schedule request.
     list_add_tail(&request.list, &slave->sdo_requests);
 
-    up(&master->master_sem);
+    sem_up(&master->master_sem);
 
     // wait for processing through FSM
     if (wait_event_interruptible(master->request_queue,
                 request.state != EC_INT_REQUEST_QUEUED)) {
         // interrupted by signal
-        down(&master->master_sem);
+        sem_down(&master->master_sem);
         if (request.state == EC_INT_REQUEST_QUEUED) {
             list_del(&request.list);
-            up(&master->master_sem);
+            sem_up(&master->master_sem);
             ec_sdo_request_clear(&request);
             return -EINTR;
         }
         // request already processing: interrupt not possible.
-        up(&master->master_sem);
+        sem_up(&master->master_sem);
     }
 
     // wait until master FSM has finished processing
@@ -2960,13 +3040,13 @@ int ecrt_master_sdo_download_complete(ec_master_t *master,
     request.data_size = data_size;
     ecrt_sdo_request_write(&request);
 
-    if (down_interruptible(&master->master_sem)) {
+    if (sem_down_interruptible(&master->master_sem)) {
         ec_sdo_request_clear(&request);
         return -EINTR;
     }
 
     if (!(slave = ec_master_find_slave(master, 0, slave_position))) {
-        up(&master->master_sem);
+        sem_up(&master->master_sem);
         EC_MASTER_ERR(master, "Slave %u does not exist!\n", slave_position);
         ec_sdo_request_clear(&request);
         return -EINVAL;
@@ -2978,21 +3058,21 @@ int ecrt_master_sdo_download_complete(ec_master_t *master,
     // schedule request.
     list_add_tail(&request.list, &slave->sdo_requests);
 
-    up(&master->master_sem);
+    sem_up(&master->master_sem);
 
     // wait for processing through FSM
     if (wait_event_interruptible(master->request_queue,
                 request.state != EC_INT_REQUEST_QUEUED)) {
         // interrupted by signal
-        down(&master->master_sem);
+        sem_down(&master->master_sem);
         if (request.state == EC_INT_REQUEST_QUEUED) {
             list_del(&request.list);
-            up(&master->master_sem);
+            sem_up(&master->master_sem);
             ec_sdo_request_clear(&request);
             return -EINTR;
         }
         // request already processing: interrupt not possible.
-        up(&master->master_sem);
+        sem_up(&master->master_sem);
     }
 
     // wait until master FSM has finished processing
@@ -3033,13 +3113,13 @@ int ecrt_master_sdo_upload(ec_master_t *master, uint16_t slave_position,
     ecrt_sdo_request_index(&request, index, subindex);
     ecrt_sdo_request_read(&request);
 
-    if (down_interruptible(&master->master_sem)) {
+    if (sem_down_interruptible(&master->master_sem)) {
         ec_sdo_request_clear(&request);
         return -EINTR;
     }
 
     if (!(slave = ec_master_find_slave(master, 0, slave_position))) {
-        up(&master->master_sem);
+        sem_up(&master->master_sem);
         ec_sdo_request_clear(&request);
         EC_MASTER_ERR(master, "Slave %u does not exist!\n", slave_position);
         return -EINVAL;
@@ -3050,21 +3130,21 @@ int ecrt_master_sdo_upload(ec_master_t *master, uint16_t slave_position,
     // schedule request.
     list_add_tail(&request.list, &slave->sdo_requests);
 
-    up(&master->master_sem);
+    sem_up(&master->master_sem);
 
     // wait for processing through FSM
     if (wait_event_interruptible(master->request_queue,
                 request.state != EC_INT_REQUEST_QUEUED)) {
         // interrupted by signal
-        down(&master->master_sem);
+        sem_down(&master->master_sem);
         if (request.state == EC_INT_REQUEST_QUEUED) {
             list_del(&request.list);
-            up(&master->master_sem);
+            sem_up(&master->master_sem);
             ec_sdo_request_clear(&request);
             return -EINTR;
         }
         // request already processing: interrupt not possible.
-        up(&master->master_sem);
+        sem_up(&master->master_sem);
     }
 
     // wait until master FSM has finished processing
@@ -3124,13 +3204,13 @@ int ecrt_master_write_idn(ec_master_t *master, uint16_t slave_position,
     request.data_size = data_size;
     ec_soe_request_write(&request);
 
-    if (down_interruptible(&master->master_sem)) {
+    if (sem_down_interruptible(&master->master_sem)) {
         ec_soe_request_clear(&request);
         return -EINTR;
     }
 
     if (!(slave = ec_master_find_slave(master, 0, slave_position))) {
-        up(&master->master_sem);
+        sem_up(&master->master_sem);
         EC_MASTER_ERR(master, "Slave %u does not exist!\n",
                 slave_position);
         ec_soe_request_clear(&request);
@@ -3142,21 +3222,21 @@ int ecrt_master_write_idn(ec_master_t *master, uint16_t slave_position,
     // schedule SoE write request.
     list_add_tail(&request.list, &slave->soe_requests);
 
-    up(&master->master_sem);
+    sem_up(&master->master_sem);
 
     // wait for processing through FSM
     if (wait_event_interruptible(master->request_queue,
                 request.state != EC_INT_REQUEST_QUEUED)) {
         // interrupted by signal
-        down(&master->master_sem);
+        sem_down(&master->master_sem);
         if (request.state == EC_INT_REQUEST_QUEUED) {
             // abort request
             list_del(&request.list);
-            up(&master->master_sem);
+            sem_up(&master->master_sem);
             ec_soe_request_clear(&request);
             return -EINTR;
         }
-        up(&master->master_sem);
+        sem_up(&master->master_sem);
     }
 
     // wait until master FSM has finished processing
@@ -3191,13 +3271,13 @@ int ecrt_master_read_idn(ec_master_t *master, uint16_t slave_position,
     ec_soe_request_set_idn(&request, idn);
     ec_soe_request_read(&request);
 
-    if (down_interruptible(&master->master_sem)) {
+    if (sem_down_interruptible(&master->master_sem)) {
         ec_soe_request_clear(&request);
         return -EINTR;
     }
 
     if (!(slave = ec_master_find_slave(master, 0, slave_position))) {
-        up(&master->master_sem);
+        sem_up(&master->master_sem);
         ec_soe_request_clear(&request);
         EC_MASTER_ERR(master, "Slave %u does not exist!\n", slave_position);
         return -EINVAL;
@@ -3208,21 +3288,21 @@ int ecrt_master_read_idn(ec_master_t *master, uint16_t slave_position,
     // schedule request.
     list_add_tail(&request.list, &slave->soe_requests);
 
-    up(&master->master_sem);
+    sem_up(&master->master_sem);
 
     // wait for processing through FSM
     if (wait_event_interruptible(master->request_queue,
                 request.state != EC_INT_REQUEST_QUEUED)) {
         // interrupted by signal
-        down(&master->master_sem);
+        sem_down(&master->master_sem);
         if (request.state == EC_INT_REQUEST_QUEUED) {
             list_del(&request.list);
-            up(&master->master_sem);
+            sem_up(&master->master_sem);
             ec_soe_request_clear(&request);
             return -EINTR;
         }
         // request already processing: interrupt not possible.
-        up(&master->master_sem);
+        sem_up(&master->master_sem);
     }
 
     // wait until master FSM has finished processing

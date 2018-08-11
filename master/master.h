@@ -59,6 +59,22 @@
 #include "rtdm.h"
 #endif
 
+#ifdef EC_RTNET
+#include <rtdm/driver.h>
+#include <rtdm/rtdm.h>
+typedef rtdm_sem_t  ec_semaphore_t;
+#define sem_up(a)     rtdm_sem_up(a)
+#define sem_down(a)   rtdm_sem_down(a)
+#define sem_down_interruptible(a) rtdm_sem_down(a) 
+#define ec_sema_init(a, b)  rtdm_sem_init(a, b)   
+#else
+#define sem_up(a)     up(a)
+#define sem_down(a)   down(a)
+#define sem_down_interruptible(a) down_interruptible(a) 
+typedef  ec_semaphore_t ec_semaphore_t;
+#define ec_sema_init(a, b)  sema_init(a, b)  
+#endif
+
 /*****************************************************************************/
 
 /** Convenience macro for printing master-specific information to syslog.
@@ -195,18 +211,20 @@ struct ec_master {
     unsigned int index; /**< Index. */
     unsigned int reserved; /**< \a True, if the master is in use. */
 
+#ifndef EC_RTNET
     ec_cdev_t cdev; /**< Master character device. */
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 26)
     struct device *class_device; /**< Master class device. */
 #else
     struct class_device *class_device; /**< Master class device. */
 #endif
+#endif
 
 #ifdef EC_RTDM
     ec_rtdm_dev_t rtdm_dev; /**< RTDM device. */
 #endif
 
-    struct semaphore master_sem; /**< Master semaphore. */
+    ec_semaphore_t master_sem; /**< Master semaphore. */
 
     ec_device_t devices[EC_MAX_NUM_DEVICES]; /**< EtherCAT devices. */
     const uint8_t *macs[EC_MAX_NUM_DEVICES]; /**< Device MAC addresses. */
@@ -215,7 +233,7 @@ struct ec_master {
                                 ec_master_num_devices(), because it may be
                                 optimized! */
 #endif
-    struct semaphore device_sem; /**< Device semaphore. */
+    ec_semaphore_t device_sem; /**< Device semaphore. */
     ec_device_stats_t device_stats; /**< Device statistics. */
 
     ec_fsm_master_t fsm; /**< Master state machine. */
@@ -250,13 +268,13 @@ struct ec_master {
 
     unsigned int scan_busy; /**< Current scan state. */
     unsigned int allow_scan; /**< \a True, if slave scanning is allowed. */
-    struct semaphore scan_sem; /**< Semaphore protecting the \a scan_busy
+    ec_semaphore_t scan_sem; /**< Semaphore protecting the \a scan_busy
                                  variable and the \a allow_scan flag. */
     wait_queue_head_t scan_queue; /**< Queue for processes that wait for
                                     slave scanning. */
 
     unsigned int config_busy; /**< State of slave configuration. */
-    struct semaphore config_sem; /**< Semaphore protecting the \a config_busy
+    ec_semaphore_t config_sem; /**< Semaphore protecting the \a config_busy
                                    variable and the allow_config flag. */
     wait_queue_head_t config_queue; /**< Queue for processes that wait for
                                       slave configuration. */
@@ -266,7 +284,7 @@ struct ec_master {
 
     struct list_head ext_datagram_queue; /**< Queue for non-application
                                            datagrams. */
-    struct semaphore ext_queue_sem; /**< Semaphore protecting the \a
+    ec_semaphore_t ext_queue_sem; /**< Semaphore protecting the \a
                                       ext_datagram_queue. */
 
     ec_datagram_t ext_datagram_ring[EC_EXT_RING_SIZE]; /**< External datagram
@@ -285,15 +303,18 @@ struct ec_master {
 
     unsigned int debug_level; /**< Master debug level. */
     ec_stats_t stats; /**< Cyclic statistics. */
-
+#ifdef EC_RTNET
+    rtdm_task_t *thread;
+#else
     struct task_struct *thread; /**< Master thread. */
+#endif
 
 #ifdef EC_EOE
     struct task_struct *eoe_thread; /**< EoE thread. */
     struct list_head eoe_handlers; /**< Ethernet over EtherCAT handlers. */
 #endif
 
-    struct semaphore io_sem; /**< Semaphore used in \a IDLE phase. */
+    ec_semaphore_t io_sem; /**< Semaphore used in \a IDLE phase. */
 
     void (*send_cb)(void *); /**< Current send datagrams callback. */
     void (*receive_cb)(void *); /**< Current receive datagrams callback. */

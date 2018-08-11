@@ -640,6 +640,45 @@ AM_CONDITIONAL(ENABLE_RTDM, test "x$rtdm" = "x1")
 AC_SUBST(ENABLE_RTDM,[$rtdm])
 
 #------------------------------------------------------------------------------
+# RTNET interface (optional)
+#------------------------------------------------------------------------------
+
+AC_ARG_ENABLE([rtnet],
+    AC_HELP_STRING(
+        [--enable-rtnet],
+        [Enable RTNET , depends on Xenomai and RTDM]
+    ),
+    [
+        case "${enableval}" in
+		yes) if test "x${rtdm}" = "x1"; then
+		      rtnet=1
+		     else
+			rtnet=0
+			AC_MSG_ERROR([Invalid value for --enable-rtnet, please make sure rtdm has been enabled])
+		    fi
+                ;;
+            no) rtnet=0
+                ;;
+            *) AC_MSG_ERROR([Invalid value for --enable-rtnet])
+                ;;
+        esac
+    ],
+    [rtnet=0]
+)
+
+AC_MSG_CHECKING([whether to build RTNET])
+
+if test "x${rtnet}" = "x1"; then
+    AC_DEFINE([EC_RTNET], [1], [RTNET interface enabled])
+    AC_MSG_RESULT([yes])
+else
+    AC_MSG_RESULT([no])
+fi
+
+AM_CONDITIONAL(ENABLE_RTNET, test "x$rtnet" = "x1")
+AC_SUBST(ENABLE_RTNET,[$rtnet])
+
+#------------------------------------------------------------------------------
 # Debug interface
 #------------------------------------------------------------------------------
 

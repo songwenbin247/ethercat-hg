@@ -326,15 +326,15 @@ void ec_fsm_master_state_broadcast(
     }
 
     if (fsm->rescan_required) {
-        down(&master->scan_sem);
+        sem_down(&master->scan_sem);
         if (!master->allow_scan) {
-            up(&master->scan_sem);
+            sem_up(&master->scan_sem);
         } else {
             unsigned int count = 0, next_dev_slave, ring_position;
             ec_device_index_t dev_idx;
 
             master->scan_busy = 1;
-            up(&master->scan_sem);
+            sem_up(&master->scan_sem);
 
             // clear all slaves and scan the bus
             fsm->rescan_required = 0;
@@ -792,9 +792,9 @@ void ec_fsm_master_action_configure(
                 || slave->force_config) && !slave->error_flag) {
 
         // Start slave configuration
-        down(&master->config_sem);
+        sem_down(&master->config_sem);
         master->config_busy = 1;
-        up(&master->config_sem);
+        sem_up(&master->config_sem);
 
         if (master->debug_level) {
             char old_state[EC_STATE_STRING_SIZE],

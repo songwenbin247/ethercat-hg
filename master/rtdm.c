@@ -72,8 +72,11 @@ static struct rtdm_driver ethercat_driver = {
         .ops = {
                 .open           = ec_rtdm_open,
                 .close          = ec_rtdm_close,
-        //        .ioctl_rt       = ec_rtdm_ioctl,
+#ifdef EC_RTNET
+                .ioctl_rt       = ec_rtdm_ioctl,
+#else
                 .ioctl_nrt      = ec_rtdm_ioctl,
+#endif
         //        .read_rt        = rt_imx_uart_read,
         //        .write_rt       = rt_imx_uart_write,
         },   
