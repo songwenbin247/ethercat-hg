@@ -63,16 +63,26 @@
 #include <rtdm/driver.h>
 #include <rtdm/rtdm.h>
 typedef rtdm_sem_t  ec_semaphore_t;
+typedef struct rtdm_waitqueue ec_wait_queue_head_t;
 #define sem_up(a)     rtdm_sem_up(a)
 #define sem_down(a)   rtdm_sem_down(a)
 #define sem_down_interruptible(a) rtdm_sem_down(a) 
 #define ec_sema_init(a, b)  rtdm_sem_init(a, b)   
+#define ec_wait_event(a, b) rtdm_wait_condition(a, b)
+#define ec_wait_event_interruptible(a, b) rtdm_wait_condition(a, b)
+#define ec_wake_up_all(a) rtdm_waitqueue_broadcast(a)
+#define ec_init_waitqueue_head(a) rtdm_waitqueue_init(a)
 #else
 #define sem_up(a)     up(a)
 #define sem_down(a)   down(a)
 #define sem_down_interruptible(a) down_interruptible(a) 
-typedef  ec_semaphore_t ec_semaphore_t;
+typedef  struct semaphore ec_semaphore_t;
 #define ec_sema_init(a, b)  sema_init(a, b)  
+#define ec_wait_event(a, b) wait_event(a, b)
+#define ec_wait_event_interruptible(a, b) wait_event_interruptible(a, b)
+#define ec_wake_up_all(a) waitqueue_broadcast(a)
+#define ec_init_waitqueue_head(a) init_waitqueue_head(a)
+typedef wait_queue_head_t ec_wait_queue_head_t;
 #endif
 
 /*****************************************************************************/
@@ -270,13 +280,13 @@ struct ec_master {
     unsigned int allow_scan; /**< \a True, if slave scanning is allowed. */
     ec_semaphore_t scan_sem; /**< Semaphore protecting the \a scan_busy
                                  variable and the \a allow_scan flag. */
-    wait_queue_head_t scan_queue; /**< Queue for processes that wait for
+    ec_wait_queue_head_t scan_queue; /**< Queue for processes that wait for
                                     slave scanning. */
 
     unsigned int config_busy; /**< State of slave configuration. */
     ec_semaphore_t config_sem; /**< Semaphore protecting the \a config_busy
                                    variable and the allow_config flag. */
-    wait_queue_head_t config_queue; /**< Queue for processes that wait for
+    ec_wait_queue_head_t config_queue; /**< Queue for processes that wait for
                                       slave configuration. */
 
     struct list_head datagram_queue; /**< Datagram queue. */
@@ -329,7 +339,7 @@ struct ec_master {
     struct list_head emerg_reg_requests; /**< Emergency register access
                                            requests. */
 
-    wait_queue_head_t request_queue; /**< Wait queue for external requests
+    ec_wait_queue_head_t request_queue; /**< Wait queue for external requests
                                        from user space. */
 };
 

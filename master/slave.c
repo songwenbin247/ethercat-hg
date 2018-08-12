@@ -226,7 +226,7 @@ void ec_slave_clear(ec_slave_t *slave /**< EtherCAT slave */)
         request->state = EC_INT_REQUEST_FAILURE;
     }
 
-    wake_up_all(&slave->master->request_queue);
+    ec_wake_up_all(&slave->master->request_queue);
 
     if (slave->config) {
         ec_slave_config_detach(slave->config);

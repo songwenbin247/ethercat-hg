@@ -311,7 +311,7 @@ void ec_slave_config_detach(
                 EC_SLAVE_WARN(sc->slave, "Aborting register request,"
                         " slave is detaching.\n");
                 reg->state = EC_INT_REQUEST_FAILURE;
-                wake_up_all(&sc->slave->master->request_queue);
+                ec_wake_up_all(&sc->slave->master->request_queue);
                 break;
             }
         }

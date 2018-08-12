@@ -192,11 +192,11 @@ int ec_master_init(ec_master_t *master, /**< EtherCAT master */
     master->scan_busy = 0;
     master->allow_scan = 1;
     ec_sema_init(&master->scan_sem, 1);
-    init_waitqueue_head(&master->scan_queue);
+    ec_init_waitqueue_head(&master->scan_queue);
 
     master->config_busy = 0;
     ec_sema_init(&master->config_sem, 1);
-    init_waitqueue_head(&master->config_queue);
+    ec_init_waitqueue_head(&master->config_queue);
 
     INIT_LIST_HEAD(&master->datagram_queue);
     master->datagram_index = 0;
@@ -244,7 +244,7 @@ int ec_master_init(ec_master_t *master, /**< EtherCAT master */
     INIT_LIST_HEAD(&master->sii_requests);
     INIT_LIST_HEAD(&master->emerg_reg_requests);
 
-    init_waitqueue_head(&master->request_queue);
+    ec_init_waitqueue_head(&master->request_queue);
 
     // init devices
     for (dev_idx = EC_DEVICE_MAIN; dev_idx < ec_master_num_devices(master);
@@ -739,7 +739,7 @@ int ec_master_enter_operation_phase(
         sem_up(&master->config_sem);
 
         // wait for slave configuration to complete
-        ret = wait_event_interruptible(master->config_queue,
+        ret = ec_wait_event_interruptible(master->config_queue,
                     !master->config_busy);
         if (ret) {
             EC_MASTER_INFO(master, "Finishing slave configuration"
@@ -761,7 +761,7 @@ int ec_master_enter_operation_phase(
         sem_up(&master->scan_sem);
 
         // wait for slave scan to complete
-        ret = wait_event_interruptible(master->scan_queue,
+        ret = ec_wait_event_interruptible(master->scan_queue,
                 !master->scan_busy);
         if (ret) {
             EC_MASTER_INFO(master, "Waiting for slave scan"
@@ -2975,7 +2975,7 @@ int ecrt_master_sdo_download(ec_master_t *master, uint16_t slave_position,
     sem_up(&master->master_sem);
 
     // wait for processing through FSM
-    if (wait_event_interruptible(master->request_queue,
+    if (ec_wait_event_interruptible(master->request_queue,
                 request.state != EC_INT_REQUEST_QUEUED)) {
         // interrupted by signal
         sem_down(&master->master_sem);
@@ -2990,7 +2990,7 @@ int ecrt_master_sdo_download(ec_master_t *master, uint16_t slave_position,
     }
 
     // wait until master FSM has finished processing
-    wait_event(master->request_queue, request.state != EC_INT_REQUEST_BUSY);
+    ec_wait_event(master->request_queue, request.state != EC_INT_REQUEST_BUSY);
 
     *abort_code = request.abort_code;
 
@@ -3061,7 +3061,7 @@ int ecrt_master_sdo_download_complete(ec_master_t *master,
     sem_up(&master->master_sem);
 
     // wait for processing through FSM
-    if (wait_event_interruptible(master->request_queue,
+    if (ec_wait_event_interruptible(master->request_queue,
                 request.state != EC_INT_REQUEST_QUEUED)) {
         // interrupted by signal
         sem_down(&master->master_sem);
@@ -3076,7 +3076,7 @@ int ecrt_master_sdo_download_complete(ec_master_t *master,
     }
 
     // wait until master FSM has finished processing
-    wait_event(master->request_queue, request.state != EC_INT_REQUEST_BUSY);
+    ec_wait_event(master->request_queue, request.state != EC_INT_REQUEST_BUSY);
 
     *abort_code = request.abort_code;
 
@@ -3133,7 +3133,7 @@ int ecrt_master_sdo_upload(ec_master_t *master, uint16_t slave_position,
     sem_up(&master->master_sem);
 
     // wait for processing through FSM
-    if (wait_event_interruptible(master->request_queue,
+    if (ec_wait_event_interruptible(master->request_queue,
                 request.state != EC_INT_REQUEST_QUEUED)) {
         // interrupted by signal
         sem_down(&master->master_sem);
@@ -3148,7 +3148,7 @@ int ecrt_master_sdo_upload(ec_master_t *master, uint16_t slave_position,
     }
 
     // wait until master FSM has finished processing
-    wait_event(master->request_queue, request.state != EC_INT_REQUEST_BUSY);
+    ec_wait_event(master->request_queue, request.state != EC_INT_REQUEST_BUSY);
 
     *abort_code = request.abort_code;
 
@@ -3225,7 +3225,7 @@ int ecrt_master_write_idn(ec_master_t *master, uint16_t slave_position,
     sem_up(&master->master_sem);
 
     // wait for processing through FSM
-    if (wait_event_interruptible(master->request_queue,
+    if (ec_wait_event_interruptible(master->request_queue,
                 request.state != EC_INT_REQUEST_QUEUED)) {
         // interrupted by signal
         sem_down(&master->master_sem);
@@ -3240,7 +3240,7 @@ int ecrt_master_write_idn(ec_master_t *master, uint16_t slave_position,
     }
 
     // wait until master FSM has finished processing
-    wait_event(master->request_queue, request.state != EC_INT_REQUEST_BUSY);
+    ec_wait_event(master->request_queue, request.state != EC_INT_REQUEST_BUSY);
 
     if (error_code) {
         *error_code = request.error_code;
@@ -3291,7 +3291,7 @@ int ecrt_master_read_idn(ec_master_t *master, uint16_t slave_position,
     sem_up(&master->master_sem);
 
     // wait for processing through FSM
-    if (wait_event_interruptible(master->request_queue,
+    if (ec_wait_event_interruptible(master->request_queue,
                 request.state != EC_INT_REQUEST_QUEUED)) {
         // interrupted by signal
         sem_down(&master->master_sem);
@@ -3306,7 +3306,7 @@ int ecrt_master_read_idn(ec_master_t *master, uint16_t slave_position,
     }
 
     // wait until master FSM has finished processing
-    wait_event(master->request_queue, request.state != EC_INT_REQUEST_BUSY);
+    ec_wait_event(master->request_queue, request.state != EC_INT_REQUEST_BUSY);
 
     if (error_code) {
         *error_code = request.error_code;
