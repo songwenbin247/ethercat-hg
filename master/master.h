@@ -64,25 +64,29 @@
 #include <rtdm/rtdm.h>
 typedef rtdm_sem_t  ec_semaphore_t;
 typedef struct rtdm_waitqueue ec_wait_queue_head_t;
-#define sem_up(a)     rtdm_sem_up(a)
-#define sem_down(a)   rtdm_sem_down(a)
-#define sem_down_interruptible(a) rtdm_sem_down(a) 
-#define ec_sema_init(a, b)  rtdm_sem_init(a, b)   
-#define ec_wait_event(a, b) rtdm_wait_condition(a, b)
-#define ec_wait_event_interruptible(a, b) rtdm_wait_condition(a, b)
-#define ec_wake_up_all(a) rtdm_waitqueue_broadcast(a)
-#define ec_init_waitqueue_head(a) rtdm_waitqueue_init(a)
+#define sem_up(a)     			rtdm_sem_up((a))
+#define sem_down(a)   			rtdm_sem_down((a))
+#define sem_down_interruptible(a) 	rtdm_sem_down((a)) 
+#define ec_sema_init(a, b)  		rtdm_sem_init((a), (b))   
+#define ec_wait_event(a, b) 		rtdm_wait_condition((a), (b))
+#define ec_wait_event_interruptible(a, b) rtdm_wait_condition((a), (b))
+#define ec_wake_up_all(a) 		rtdm_waitqueue_broadcast((a))
+#define ec_init_waitqueue_head(a) 	rtdm_waitqueue_init((a))
+#define ec_kmalloc(a) 			rtdm_malloc((a))
+#define ec_kfree(a) 			rtdm_free((a))
 #else
-#define sem_up(a)     up(a)
-#define sem_down(a)   down(a)
-#define sem_down_interruptible(a) down_interruptible(a) 
+#define sem_up(a)     			up(a)
+#define sem_down(a)   			down(a)
+#define sem_down_interruptible(a) 	down_interruptible(a) 
 typedef  struct semaphore ec_semaphore_t;
-#define ec_sema_init(a, b)  sema_init(a, b)  
-#define ec_wait_event(a, b) wait_event(a, b)
-#define ec_wait_event_interruptible(a, b) wait_event_interruptible(a, b)
-#define ec_wake_up_all(a) waitqueue_broadcast(a)
-#define ec_init_waitqueue_head(a) init_waitqueue_head(a)
+#define ec_sema_init(a, b)  			sema_init(a, b)  
+#define ec_wait_event(a, b) 			wait_event(a, b)
+#define ec_wait_event_interruptible(a, b) 	wait_event_interruptible(a, b)
+#define ec_wake_up_all(a) 			waitqueue_broadcast(a)
+#define ec_init_waitqueue_head(a) 		init_waitqueue_head(a)
 typedef wait_queue_head_t ec_wait_queue_head_t;
+#define ec_kmalloc(a) 	kmalloc((a), GFP_KERNEL)
+#define ec_kfree(a)   	kfree((a))
 #endif
 
 /*****************************************************************************/

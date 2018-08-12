@@ -94,7 +94,7 @@ out_return:
 void ec_pdo_clear(ec_pdo_t *pdo /**< EtherCAT PDO. */)
 {
     if (pdo->name)
-        kfree(pdo->name);
+        ec_free(pdo->name);
 
     ec_pdo_clear_entries(pdo);
 }
@@ -111,7 +111,7 @@ void ec_pdo_clear_entries(ec_pdo_t *pdo /**< EtherCAT PDO. */)
     list_for_each_entry_safe(entry, next, &pdo->entries, list) {
         list_del(&entry->list);
         ec_pdo_entry_clear(entry);
-        kfree(entry);
+        ec_free(entry);
     }
 }
 
@@ -133,10 +133,10 @@ int ec_pdo_set_name(
         return 0;
 
     if (pdo->name)
-        kfree(pdo->name);
+        ec_free(pdo->name);
 
     if (name && (len = strlen(name))) {
-        if (!(pdo->name = (char *) kmalloc(len + 1, GFP_KERNEL))) {
+        if (!(pdo->name = (char *) ec_kmalloc(len + 1))) {
             EC_ERR("Failed to allocate PDO name.\n");
             return -ENOMEM;
         }
@@ -163,7 +163,7 @@ ec_pdo_entry_t *ec_pdo_add_entry(
 {
     ec_pdo_entry_t *entry;
 
-    if (!(entry = kmalloc(sizeof(ec_pdo_entry_t), GFP_KERNEL))) {
+    if (!(entry = ec_kmalloc(sizeof(ec_pdo_entry_t)))) {
         EC_ERR("Failed to allocate memory for PDO entry.\n");
         return ERR_PTR(-ENOMEM);
     }
@@ -195,14 +195,14 @@ int ec_pdo_copy_entries(
 
     list_for_each_entry(other_entry, &other->entries, list) {
         if (!(entry = (ec_pdo_entry_t *)
-                    kmalloc(sizeof(ec_pdo_entry_t), GFP_KERNEL))) {
+                    ec_kmalloc(sizeof(ec_pdo_entry_t)))) {
             EC_ERR("Failed to allocate memory for PDO entry copy.\n");
             return -ENOMEM;
         }
 
         ret = ec_pdo_entry_init_copy(entry, other_entry);
         if (ret < 0) {
-            kfree(entry);
+            ec_free(entry);
             return ret;
         }
 

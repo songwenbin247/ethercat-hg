@@ -139,8 +139,7 @@ int __init ec_init_module(void)
     ec_master_init_static();
 
     if (master_count) {
-        if (!(masters = kmalloc(sizeof(ec_master_t) * master_count,
-                        GFP_KERNEL))) {
+        if (!(masters = ec_kmalloc(sizeof(ec_master_t) * master_count))) {
             EC_ERR("Failed to allocate memory"
                     " for EtherCAT masters.\n");
             ret = -ENOMEM;
@@ -162,7 +161,7 @@ int __init ec_init_module(void)
 out_free_masters:
     for (i--; i >= 0; i--)
         ec_master_clear(&masters[i]);
-    kfree(masters);
+    ec_kfree(masters);
 out_class:
     class_destroy(class);
 out_cdev:
@@ -187,7 +186,7 @@ void __exit ec_cleanup_module(void)
     }
 
     if (master_count)
-        kfree(masters);
+        ec_kfree(masters);
 
     class_destroy(class);
 

@@ -76,7 +76,7 @@ int ec_pdo_entry_init_copy(
 void ec_pdo_entry_clear(ec_pdo_entry_t *entry /**< PDO entry. */)
 {
     if (entry->name)
-        kfree(entry->name);
+        ec_free(entry->name);
 }
 
 /*****************************************************************************/
@@ -97,10 +97,10 @@ int ec_pdo_entry_set_name(
         return 0;
 
     if (entry->name)
-        kfree(entry->name);
+        ec_free(entry->name);
 
     if (name && (len = strlen(name))) {
-        if (!(entry->name = (char *) kmalloc(len + 1, GFP_KERNEL))) {
+        if (!(entry->name = (char *) ec_kmalloc(len + 1))) {
             EC_ERR("Failed to allocate PDO entry name.\n");
             return -ENOMEM;
         }

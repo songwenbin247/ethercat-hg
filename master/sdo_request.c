@@ -108,7 +108,7 @@ void ec_sdo_request_clear_data(
         )
 {
     if (req->data) {
-        kfree(req->data);
+        ec_free(req->data);
         req->data = NULL;
     }
 
@@ -134,7 +134,7 @@ int ec_sdo_request_alloc(
 
     ec_sdo_request_clear_data(req);
 
-    if (!(req->data = (uint8_t *) kmalloc(size, GFP_KERNEL))) {
+    if (!(req->data = (uint8_t *) ec_kmalloc(size))) {
         EC_ERR("Failed to allocate %zu bytes of SDO memory.\n", size);
         return -ENOMEM;
     }

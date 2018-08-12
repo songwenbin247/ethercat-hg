@@ -452,7 +452,7 @@ void ec_master_clear_eoe_handlers(
     list_for_each_entry_safe(eoe, next, &master->eoe_handlers, list) {
         list_del(&eoe->list);
         ec_eoe_clear(eoe);
-        kfree(eoe);
+        ec_kfree(eoe);
     }
 }
 #endif
@@ -471,7 +471,7 @@ void ec_master_clear_slave_configs(ec_master_t *master)
     list_for_each_entry_safe(sc, next, &master->configs, list) {
         list_del(&sc->list);
         ec_slave_config_clear(sc);
-        kfree(sc);
+        ec_kfree(sc);
     }
 }
 
@@ -510,7 +510,7 @@ void ec_master_clear_slaves(ec_master_t *master)
     }
 
     if (master->slaves) {
-        kfree(master->slaves);
+        ec_kfree(master->slaves);
         master->slaves = NULL;
     }
 
@@ -528,7 +528,7 @@ void ec_master_clear_domains(ec_master_t *master)
     list_for_each_entry_safe(domain, next, &master->domains, list) {
         list_del(&domain->list);
         ec_domain_clear(domain);
-        kfree(domain);
+        ec_kfree(domain);
     }
 }
 
@@ -598,9 +598,9 @@ int ec_master_thread_start(
     int err;
     EC_MASTER_INFO(master, "Starting %s thread.\n", name);
 #ifdef EC_RTNET
-    	master->thread = (rtdm_task_t *) kmalloc(sizeof(rtdm_task_t), GFP_KERNEL);  
+    	master->thread = (rtdm_task_t *) ec_kmalloc(sizeof(rtdm_task_t));  
 	if (!master->thread){
-		EC_MASTER_ERR(master, "Filed to kmalloc memory for master task!\n");
+		EC_MASTER_ERR(master, "Filed to ec_kmalloc memory for master task!\n");
 		return -ENOMEM;
 	
 	}
@@ -643,7 +643,7 @@ void ec_master_thread_stop(
     EC_MASTER_DBG(master, 1, "Stopping master thread.\n");
 #ifdef EC_RTNET
     rtdm_task_destroy(master->thread);
-    kfree(master->thread);
+    ec_kfree(master->thread);
 #else
     kthread_stop(master->thread);
 #endif
@@ -2337,7 +2337,7 @@ ec_domain_t *ecrt_master_create_domain_err(
             master);
 
     if (!(domain =
-                (ec_domain_t *) kmalloc(sizeof(ec_domain_t), GFP_KERNEL))) {
+                (ec_domain_t *) ec_kmalloc(sizeof(ec_domain_t)))) {
         EC_MASTER_ERR(master, "Error allocating domain memory!\n");
         return ERR_PTR(-ENOMEM);
     }
@@ -2669,8 +2669,7 @@ ec_slave_config_t *ecrt_master_slave_config_err(ec_master_t *master,
                 " 0x%08X/0x%08X.\n",
                 alias, position, vendor_id, product_code);
 
-        if (!(sc = (ec_slave_config_t *) kmalloc(sizeof(ec_slave_config_t),
-                        GFP_KERNEL))) {
+        if (!(sc = (ec_slave_config_t *) ec_kmalloc(sizeof(ec_slave_config_t)))) {
             EC_MASTER_ERR(master, "Failed to allocate memory"
                     " for slave configuration.\n");
             return ERR_PTR(-ENOMEM);

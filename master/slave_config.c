@@ -120,35 +120,35 @@ void ec_slave_config_clear(
     list_for_each_entry_safe(req, next_req, &sc->sdo_configs, list) {
         list_del(&req->list);
         ec_sdo_request_clear(req);
-        kfree(req);
+        ec_free(req);
     }
 
     // free all SDO requests
     list_for_each_entry_safe(req, next_req, &sc->sdo_requests, list) {
         list_del(&req->list);
         ec_sdo_request_clear(req);
-        kfree(req);
+        ec_free(req);
     }
 
     // free all register requests
     list_for_each_entry_safe(reg, next_reg, &sc->reg_requests, list) {
         list_del(&reg->list);
         ec_reg_request_clear(reg);
-        kfree(reg);
+        ec_free(reg);
     }
 
     // free all VoE handlers
     list_for_each_entry_safe(voe, next_voe, &sc->voe_handlers, list) {
         list_del(&voe->list);
         ec_voe_handler_clear(voe);
-        kfree(voe);
+        ec_free(voe);
     }
 
     // free all SoE configurations
     list_for_each_entry_safe(soe, next_soe, &sc->soe_configs, list) {
         list_del(&soe->list);
         ec_soe_request_clear(soe);
-        kfree(soe);
+        ec_free(soe);
     }
 
     ec_coe_emerg_ring_clear(&sc->emerg_ring);
@@ -969,7 +969,7 @@ int ecrt_slave_config_sdo(ec_slave_config_t *sc, uint16_t index,
     }
 
     if (!(req = (ec_sdo_request_t *)
-          kmalloc(sizeof(ec_sdo_request_t), GFP_KERNEL))) {
+          ec_kmalloc(sizeof(ec_sdo_request_t)))) {
         EC_CONFIG_ERR(sc, "Failed to allocate memory for"
                 " SDO configuration!\n");
         return -ENOMEM;
@@ -981,7 +981,7 @@ int ecrt_slave_config_sdo(ec_slave_config_t *sc, uint16_t index,
     ret = ec_sdo_request_copy_data(req, data, size);
     if (ret < 0) {
         ec_sdo_request_clear(req);
-        kfree(req);
+        ec_free(req);
         return ret;
     }
 
@@ -1053,7 +1053,7 @@ int ecrt_slave_config_complete_sdo(ec_slave_config_t *sc, uint16_t index,
     }
 
     if (!(req = (ec_sdo_request_t *)
-          kmalloc(sizeof(ec_sdo_request_t), GFP_KERNEL))) {
+          ec_kmalloc(sizeof(ec_sdo_request_t)))) {
         EC_CONFIG_ERR(sc, "Failed to allocate memory for"
                 " SDO configuration!\n");
         return -ENOMEM;
@@ -1066,7 +1066,7 @@ int ecrt_slave_config_complete_sdo(ec_slave_config_t *sc, uint16_t index,
     ret = ec_sdo_request_copy_data(req, data, size);
     if (ret < 0) {
         ec_sdo_request_clear(req);
-        kfree(req);
+        ec_free(req);
         return ret;
     }
 
@@ -1120,7 +1120,7 @@ ec_sdo_request_t *ecrt_slave_config_create_sdo_request_err(
             __func__, sc, index, subindex, size);
 
     if (!(req = (ec_sdo_request_t *)
-                kmalloc(sizeof(ec_sdo_request_t), GFP_KERNEL))) {
+                ec_kmalloc(sizeof(ec_sdo_request_t)))) {
         EC_CONFIG_ERR(sc, "Failed to allocate SDO request memory!\n");
         return ERR_PTR(-ENOMEM);
     }
@@ -1131,7 +1131,7 @@ ec_sdo_request_t *ecrt_slave_config_create_sdo_request_err(
     ret = ec_sdo_request_alloc(req, size);
     if (ret < 0) {
         ec_sdo_request_clear(req);
-        kfree(req);
+        ec_free(req);
         return ERR_PTR(ret);
     }
 
@@ -1171,14 +1171,14 @@ ec_reg_request_t *ecrt_slave_config_create_reg_request_err(
             __func__, sc, size);
 
     if (!(reg = (ec_reg_request_t *)
-                kmalloc(sizeof(ec_reg_request_t), GFP_KERNEL))) {
+                ec_kmalloc(sizeof(ec_reg_request_t)))) {
         EC_CONFIG_ERR(sc, "Failed to allocate register request memory!\n");
         return ERR_PTR(-ENOMEM);
     }
 
     ret = ec_reg_request_init(reg, size);
     if (ret) {
-        kfree(reg);
+        ec_free(reg);
         return ERR_PTR(ret);
     }
 
@@ -1213,14 +1213,14 @@ ec_voe_handler_t *ecrt_slave_config_create_voe_handler_err(
     EC_CONFIG_DBG(sc, 1, "%s(sc = 0x%p, size = %zu)\n", __func__, sc, size);
 
     if (!(voe = (ec_voe_handler_t *)
-                kmalloc(sizeof(ec_voe_handler_t), GFP_KERNEL))) {
+                ec_kmalloc(sizeof(ec_voe_handler_t)))) {
         EC_CONFIG_ERR(sc, "Failed to allocate VoE request memory!\n");
         return ERR_PTR(-ENOMEM);
     }
 
     ret = ec_voe_handler_init(voe, sc, size);
     if (ret < 0) {
-        kfree(voe);
+        ec_free(voe);
         return ERR_PTR(ret);
     }
 
@@ -1289,7 +1289,7 @@ int ecrt_slave_config_idn(ec_slave_config_t *sc, uint8_t drive_no,
     }
 
     if (!(req = (ec_soe_request_t *)
-          kmalloc(sizeof(ec_soe_request_t), GFP_KERNEL))) {
+          ec_kmalloc(sizeof(ec_soe_request_t)))) {
         EC_CONFIG_ERR(sc, "Failed to allocate memory for"
                 " IDN configuration!\n");
         return -ENOMEM;
@@ -1303,7 +1303,7 @@ int ecrt_slave_config_idn(ec_slave_config_t *sc, uint8_t drive_no,
     ret = ec_soe_request_copy_data(req, data, size);
     if (ret < 0) {
         ec_soe_request_clear(req);
-        kfree(req);
+        ec_free(req);
         return ret;
     }
 

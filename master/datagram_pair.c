@@ -81,7 +81,7 @@ int ec_datagram_pair_init(
     }
 
 #if EC_MAX_NUM_DEVICES > 1
-    if (!(pair->send_buffer = kmalloc(data_size, GFP_KERNEL))) {
+    if (!(pair->send_buffer = ec_kmalloc(data_size))) {
         EC_MASTER_ERR(domain->master,
                 "Failed to allocate domain send buffer!\n");
         ret = -ENOMEM;
@@ -162,7 +162,7 @@ void ec_datagram_pair_clear(
 
 #if EC_MAX_NUM_DEVICES > 1
     if (pair->send_buffer) {
-        kfree(pair->send_buffer);
+        ec_kfree(pair->send_buffer);
     }
 #endif
 }

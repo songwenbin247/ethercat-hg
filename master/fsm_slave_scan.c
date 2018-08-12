@@ -609,11 +609,11 @@ void ec_fsm_slave_scan_state_sii_size(
 alloc_sii:
     if (slave->sii_words) {
         EC_SLAVE_WARN(slave, "Freeing old SII data...\n");
-        kfree(slave->sii_words);
+        ec_free(slave->sii_words);
     }
 
     if (!(slave->sii_words =
-                (uint16_t *) kmalloc(slave->sii_nwords * 2, GFP_KERNEL))) {
+                (uint16_t *) ec_kmalloc(slave->sii_nwords * 2))) {
         EC_SLAVE_ERR(slave, "Failed to allocate %zu words of SII data.\n",
                slave->sii_nwords);
         slave->sii_nwords = 0;

@@ -120,7 +120,7 @@ void ec_datagram_clear(ec_datagram_t *datagram /**< EtherCAT datagram. */)
     ec_datagram_unqueue(datagram);
 
     if (datagram->data_origin == EC_ORIG_INTERNAL && datagram->data) {
-        kfree(datagram->data);
+        ec_kfree(datagram->data);
         datagram->data = NULL;
     }
 }
@@ -157,12 +157,12 @@ int ec_datagram_prealloc(
         return 0;
 
     if (datagram->data) {
-        kfree(datagram->data);
+        ec_kfree(datagram->data);
         datagram->data = NULL;
         datagram->mem_size = 0;
     }
 
-    if (!(datagram->data = kmalloc(size, GFP_KERNEL))) {
+    if (!(datagram->data = ec_kmalloc(size))) {
         EC_ERR("Failed to allocate %zu bytes of datagram memory!\n", size);
         return -ENOMEM;
     }

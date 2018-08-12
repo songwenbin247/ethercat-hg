@@ -131,7 +131,7 @@ void ec_soe_request_clear_data(
         )
 {
     if (req->data) {
-        kfree(req->data);
+        ec_kfree(req->data);
         req->data = NULL;
     }
 
@@ -157,7 +157,7 @@ int ec_soe_request_alloc(
 
     ec_soe_request_clear_data(req);
 
-    if (!(req->data = (uint8_t *) kmalloc(size, GFP_KERNEL))) {
+    if (!(req->data = (uint8_t *) ec_kmalloc(size))) {
         EC_ERR("Failed to allocate %zu bytes of SoE memory.\n", size);
         return -ENOMEM;
     }
@@ -208,14 +208,14 @@ int ec_soe_request_append_data(
 {
     if (req->data_size + size > req->mem_size) {
         size_t new_size = req->mem_size ? req->mem_size * 2 : size;
-        uint8_t *new_data = (uint8_t *) kmalloc(new_size, GFP_KERNEL);
+        uint8_t *new_data = (uint8_t *) ec_kmalloc(new_size);
         if (!new_data) {
             EC_ERR("Failed to allocate %zu bytes of SoE memory.\n",
                     new_size);
             return -ENOMEM;
         }
         memcpy(new_data, req->data, req->data_size);
-        kfree(req->data);
+        ec_kfree(req->data);
         req->data = new_data;
         req->mem_size = new_size;
     }

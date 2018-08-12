@@ -65,7 +65,7 @@ void ec_coe_emerg_ring_clear(
         )
 {
     if (ring->msgs) {
-        kfree(ring->msgs);
+        ec_kfree(ring->msgs);
     }
 }
 
@@ -89,7 +89,7 @@ int ec_coe_emerg_ring_size(
     ring->read_index = ring->write_index = 0;
 
     if (ring->msgs) {
-        kfree(ring->msgs);
+        ec_kfree(ring->msgs);
     }
     ring->msgs = NULL;
 
@@ -97,7 +97,7 @@ int ec_coe_emerg_ring_size(
         return 0;
     }
 
-    ring->msgs = kmalloc(sizeof(ec_coe_emerg_msg_t) * (size + 1), GFP_KERNEL);
+    ring->msgs = ec_kmalloc(sizeof(ec_coe_emerg_msg_t) * (size + 1));
     if (!ring->msgs) {
         return -ENOMEM;
     }

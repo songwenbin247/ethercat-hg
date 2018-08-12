@@ -823,7 +823,7 @@ static ATTRIBUTES int ec_ioctl_slave_sdo_upload(
         return -EFAULT;
     }
 
-    if (!(target = kmalloc(data.target_size, GFP_KERNEL))) {
+    if (!(target = ec_kmalloc(data.target_size))) {
         EC_MASTER_ERR(master, "Failed to allocate %zu bytes"
                 " for SDO upload.\n", data.target_size);
         return -ENOMEM;
@@ -836,12 +836,12 @@ static ATTRIBUTES int ec_ioctl_slave_sdo_upload(
     if (!ret) {
         if (ec_copy_to_user((void __user *) data.target,
                     target, data.data_size)) {
-            kfree(target);
+            ec_free(target);
             return -EFAULT;
         }
     }
 
-    kfree(target);
+    ec_free(target);
 
     if (__ec_copy_to_user((void __user *) arg, &data, sizeof(data))) {
         return -EFAULT;
@@ -869,14 +869,14 @@ static ATTRIBUTES int ec_ioctl_slave_sdo_download(
         return -EFAULT;
     }
 
-    if (!(sdo_data = kmalloc(data.data_size, GFP_KERNEL))) {
+    if (!(sdo_data = ec_kmalloc(data.data_size))) {
         EC_MASTER_ERR(master, "Failed to allocate %zu bytes"
                 " for SDO download.\n", data.data_size);
         return -ENOMEM;
     }
 
     if (ec_copy_from_user(sdo_data, (const void __user *) data.data, data.data_size)) {
-        kfree(sdo_data);
+        ec_free(sdo_data);
         return -EFAULT;
     }
 
@@ -889,7 +889,7 @@ static ATTRIBUTES int ec_ioctl_slave_sdo_download(
                 data.data_size, &data.abort_code);
     }
 
-    kfree(sdo_data);
+    ec_free(sdo_data);
 
     if (__ec_copy_to_user((void __user *) arg, &data, sizeof(data))) {
         retval = -EFAULT;
@@ -972,7 +972,7 @@ static ATTRIBUTES int ec_ioctl_slave_sii_write(
     }
 
     byte_size = sizeof(uint16_t) * data.nwords;
-    if (!(words = kmalloc(byte_size, GFP_KERNEL))) {
+    if (!(words = ec_kmalloc(byte_size))) {
         EC_MASTER_ERR(master, "Failed to allocate %u bytes"
                 " for SII contents.\n", byte_size);
         return -ENOMEM;
@@ -980,12 +980,12 @@ static ATTRIBUTES int ec_ioctl_slave_sii_write(
 
     if (ec_copy_from_user(words,
                 (void __user *) data.words, byte_size)) {
-        kfree(words);
+        ec_free(words);
         return -EFAULT;
     }
 
     if (sem_down_interruptible(&master->master_sem)) {
-        kfree(words);
+        ec_free(words);
         return -EINTR;
     }
 
@@ -994,7 +994,7 @@ static ATTRIBUTES int ec_ioctl_slave_sii_write(
         sem_up(&master->master_sem);
         EC_MASTER_ERR(master, "Slave %u does not exist!\n",
                 data.slave_position);
-        kfree(words);
+        ec_free(words);
         return -EINVAL;
     }
 
@@ -1020,7 +1020,7 @@ static ATTRIBUTES int ec_ioctl_slave_sii_write(
             // abort request
             list_del(&request.list);
             sem_up(&master->master_sem);
-            kfree(words);
+            ec_free(words);
             return -EINTR;
         }
         sem_up(&master->master_sem);
@@ -1029,7 +1029,7 @@ static ATTRIBUTES int ec_ioctl_slave_sii_write(
     // wait until master FSM has finished processing
     ec_wait_event(master->request_queue, request.state != EC_INT_REQUEST_BUSY);
 
-    kfree(words);
+    ec_free(words);
 
     return request.state == EC_INT_REQUEST_SUCCESS ? 0 : -EIO;
 }
@@ -1392,17 +1392,17 @@ static ATTRIBUTES int ec_ioctl_config_sdo(
     const ec_slave_config_t *sc;
     const ec_sdo_request_t *req;
 
-    if (!(ioctl = kmalloc(sizeof(*ioctl), GFP_KERNEL))) {
+    if (!(ioctl = ec_kmalloc(sizeof(*ioctl)))) {
         return -ENOMEM;
     }
 
     if (ec_copy_from_user(ioctl, (void __user *) arg, sizeof(*ioctl))) {
-        kfree(ioctl);
+        ec_free(ioctl);
         return -EFAULT;
     }
 
     if (sem_down_interruptible(&master->master_sem)) {
-        kfree(ioctl);
+        ec_free(ioctl);
         return -EINTR;
     }
 
@@ -1411,7 +1411,7 @@ static ATTRIBUTES int ec_ioctl_config_sdo(
         sem_up(&master->master_sem);
         EC_MASTER_ERR(master, "Slave config %u does not exist!\n",
                 ioctl->config_index);
-        kfree(ioctl);
+        ec_free(ioctl);
         return -EINVAL;
     }
 
@@ -1419,7 +1419,7 @@ static ATTRIBUTES int ec_ioctl_config_sdo(
                     sc, ioctl->sdo_pos))) {
         sem_up(&master->master_sem);
         EC_MASTER_ERR(master, "Invalid SDO position!\n");
-        kfree(ioctl);
+        ec_free(ioctl);
         return -EINVAL;
     }
 
@@ -1433,11 +1433,11 @@ static ATTRIBUTES int ec_ioctl_config_sdo(
     sem_up(&master->master_sem);
 
     if (ec_copy_to_user((void __user *) arg, ioctl, sizeof(*ioctl))) {
-        kfree(ioctl);
+        ec_free(ioctl);
         return -EFAULT;
     }
 
-    kfree(ioctl);
+    ec_free(ioctl);
     return 0;
 }
 
@@ -1456,17 +1456,17 @@ static ATTRIBUTES int ec_ioctl_config_idn(
     const ec_slave_config_t *sc;
     const ec_soe_request_t *req;
 
-    if (!(ioctl = kmalloc(sizeof(*ioctl), GFP_KERNEL))) {
+    if (!(ioctl = ec_kmalloc(sizeof(*ioctl)))) {
         return -ENOMEM;
     }
 
     if (ec_copy_from_user(ioctl, (void __user *) arg, sizeof(*ioctl))) {
-        kfree(ioctl);
+        ec_free(ioctl);
         return -EFAULT;
     }
 
     if (sem_down_interruptible(&master->master_sem)) {
-        kfree(ioctl);
+        ec_free(ioctl);
         return -EINTR;
     }
 
@@ -1475,7 +1475,7 @@ static ATTRIBUTES int ec_ioctl_config_idn(
         sem_up(&master->master_sem);
         EC_MASTER_ERR(master, "Slave config %u does not exist!\n",
                 ioctl->config_index);
-        kfree(ioctl);
+        ec_free(ioctl);
         return -EINVAL;
     }
 
@@ -1483,7 +1483,7 @@ static ATTRIBUTES int ec_ioctl_config_idn(
                     sc, ioctl->idn_pos))) {
         sem_up(&master->master_sem);
         EC_MASTER_ERR(master, "Invalid IDN position!\n");
-        kfree(ioctl);
+        ec_free(ioctl);
         return -EINVAL;
     }
 
@@ -1497,11 +1497,11 @@ static ATTRIBUTES int ec_ioctl_config_idn(
     sem_up(&master->master_sem);
 
     if (ec_copy_to_user((void __user *) arg, ioctl, sizeof(*ioctl))) {
-        kfree(ioctl);
+        ec_free(ioctl);
         return -EFAULT;
     }
 
-    kfree(ioctl);
+    ec_free(ioctl);
     return 0;
 }
 
@@ -2614,23 +2614,23 @@ static ATTRIBUTES int ec_ioctl_sc_sdo(
     if (!data.size)
         return -EINVAL;
 
-    if (!(sdo_data = kmalloc(data.size, GFP_KERNEL))) {
+    if (!(sdo_data = ec_kmalloc(data.size))) {
         return -ENOMEM;
     }
 
     if (ec_copy_from_user(sdo_data, (void __user *) data.data, data.size)) {
-        kfree(sdo_data);
+        ec_free(sdo_data);
         return -EFAULT;
     }
 
     if (sem_down_interruptible(&master->master_sem)) {
-        kfree(sdo_data);
+        ec_free(sdo_data);
         return -EINTR;
     }
 
     if (!(sc = ec_master_get_config(master, data.config_index))) {
         sem_up(&master->master_sem);
-        kfree(sdo_data);
+        ec_free(sdo_data);
         return -ENOENT;
     }
 
@@ -2643,7 +2643,7 @@ static ATTRIBUTES int ec_ioctl_sc_sdo(
         ret = ecrt_slave_config_sdo(sc, data.index, data.subindex, sdo_data,
                 data.size);
     }
-    kfree(sdo_data);
+    ec_free(sdo_data);
     return ret;
 }
 
@@ -3026,23 +3026,23 @@ static ATTRIBUTES int ec_ioctl_sc_idn(
     if (!ioctl.size)
         return -EINVAL;
 
-    if (!(data = kmalloc(ioctl.size, GFP_KERNEL))) {
+    if (!(data = ec_kmalloc(ioctl.size))) {
         return -ENOMEM;
     }
 
     if (ec_copy_from_user(data, (void __user *) ioctl.data, ioctl.size)) {
-        kfree(data);
+        ec_free(data);
         return -EFAULT;
     }
 
     if (sem_down_interruptible(&master->master_sem)) {
-        kfree(data);
+        ec_free(data);
         return -EINTR;
     }
 
     if (!(sc = ec_master_get_config(master, ioctl.config_index))) {
         sem_up(&master->master_sem);
-        kfree(data);
+        ec_free(data);
         return -ENOENT;
     }
 
@@ -3050,7 +3050,7 @@ static ATTRIBUTES int ec_ioctl_sc_idn(
 
     ret = ecrt_slave_config_idn(
             sc, ioctl.drive_no, ioctl.idn, ioctl.al_state, data, ioctl.size);
-    kfree(data);
+    ec_free(data);
     return ret;
 }
 
@@ -4147,7 +4147,7 @@ static ATTRIBUTES int ec_ioctl_slave_soe_read(
         return -EFAULT;
     }
 
-    data = kmalloc(ioctl.mem_size, GFP_KERNEL);
+    data = ec_kmalloc(ioctl.mem_size);
     if (!data) {
         EC_MASTER_ERR(master, "Failed to allocate %zu bytes of IDN data.\n",
                 ioctl.mem_size);
@@ -4158,16 +4158,16 @@ static ATTRIBUTES int ec_ioctl_slave_soe_read(
             ioctl.drive_no, ioctl.idn, data, ioctl.mem_size, &ioctl.data_size,
             &ioctl.error_code);
     if (retval) {
-        kfree(data);
+        ec_free(data);
         return retval;
     }
 
     if (ec_copy_to_user((void __user *) ioctl.data,
                 data, ioctl.data_size)) {
-        kfree(data);
+        ec_free(data);
         return -EFAULT;
     }
-    kfree(data);
+    ec_free(data);
 
     if (__ec_copy_to_user((void __user *) arg, &ioctl, sizeof(ioctl))) {
         retval = -EFAULT;
@@ -4196,21 +4196,21 @@ static ATTRIBUTES int ec_ioctl_slave_soe_write(
         return -EFAULT;
     }
 
-    data = kmalloc(ioctl.data_size, GFP_KERNEL);
+    data = ec_kmalloc(ioctl.data_size);
     if (!data) {
         EC_MASTER_ERR(master, "Failed to allocate %zu bytes of IDN data.\n",
                 ioctl.data_size);
         return -ENOMEM;
     }
     if (ec_copy_from_user(data, (void __user *) ioctl.data, ioctl.data_size)) {
-        kfree(data);
+        ec_free(data);
         return -EFAULT;
     }
 
     retval = ecrt_master_write_idn(master, ioctl.slave_position,
             ioctl.drive_no, ioctl.idn, data, ioctl.data_size,
             &ioctl.error_code);
-    kfree(data);
+    ec_free(data);
     if (retval) {
         return retval;
     }

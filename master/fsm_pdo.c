@@ -330,7 +330,7 @@ void ec_fsm_pdo_read_state_pdo(
     }
 
     if (!(fsm->pdo = (ec_pdo_t *)
-                kmalloc(sizeof(ec_pdo_t), GFP_KERNEL))) {
+                ec_kmalloc(sizeof(ec_pdo_t)))) {
         EC_SLAVE_ERR(fsm->slave, "Failed to allocate PDO.\n");
         ec_fsm_pdo_read_action_next_sync(fsm, datagram);
         return;

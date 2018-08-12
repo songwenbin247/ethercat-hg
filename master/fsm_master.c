@@ -362,7 +362,7 @@ void ec_fsm_master_state_broadcast(
 
             size = sizeof(ec_slave_t) * count;
             if (!(master->slaves =
-                        (ec_slave_t *) kmalloc(size, GFP_KERNEL))) {
+                        (ec_slave_t *) ec_kmalloc(size))) {
                 EC_MASTER_ERR(master, "Failed to allocate %u bytes"
                         " of slave memory!\n", size);
                 master->scan_busy = 0;
@@ -1104,11 +1104,11 @@ void ec_fsm_master_state_scan_slave(
     if (slave->sii.mailbox_protocols & EC_MBOX_EOE) {
         // create EoE handler for this slave
         ec_eoe_t *eoe;
-        if (!(eoe = kmalloc(sizeof(ec_eoe_t), GFP_KERNEL))) {
+        if (!(eoe = ec_kmalloc(sizeof(ec_eoe_t)))) {
             EC_SLAVE_ERR(slave, "Failed to allocate EoE handler memory!\n");
         } else if (ec_eoe_init(eoe, slave)) {
             EC_SLAVE_ERR(slave, "Failed to init EoE handler!\n");
-            kfree(eoe);
+            ec_free(eoe);
         } else {
             list_add_tail(&eoe->list, &master->eoe_handlers);
         }
