@@ -574,6 +574,30 @@ void ec_master_internal_receive_cb(
     sem_up(&master->io_sem);
 }
 
+struct run_thread_t
+{
+	void (*func)(void *);
+	void *pre;
+};
+
+static int rtdm_stop = 1;
+static struct run_thread_t run_thread = {.func = NULL, .pre = NULL}; 
+static int server_running = 0;
+struct rtdm_waitqueue  stop_done, start_angain;
+void thread_server(void *pre)
+{
+	while(!rtdm_task_should_stop()){
+		if(rtdm_stop) {
+			rtdm_waitqueue_signal(&stop_done);
+			rtdm_wait(&start_angain);
+		}
+		else {
+			run_thread.func(run_thread.pre);
+		}	
+	}	
+}
+
+
 /*****************************************************************************/
 
 /** Starts the master thread.
@@ -598,16 +622,30 @@ int ec_master_thread_start(
     int err;
     EC_MASTER_INFO(master, "Starting %s thread.\n", name);
 #ifdef EC_RTNET
-    	master->thread = (rtdm_task_t *) ec_kmalloc(sizeof(rtdm_task_t));  
-	if (!master->thread){
-		EC_MASTER_ERR(master, "Filed to ec_kmalloc memory for master task!\n");
-		return -ENOMEM;
+    	if (!server_running) {
+    		master->thread = (rtdm_task_t *) ec_kmalloc(sizeof(rtdm_task_t));  
+		if (!master->thread){
+			EC_MASTER_ERR(master, "Filed to ec_kmalloc memory for master task!\n");
+			return -ENOMEM;
 	
-	}
-	if ((err = rtdm_task_init(master->thread, name, thread_func, master,
+		}
+		run_thread.func = thread_func;
+		run_thread.pre = master;
+		rtdm_stop = 0;
+		rtdm_waitqueue_init(&stop_done);
+		rtdm_waitqueue_init(&start_angain);
+		if ((err = rtdm_task_init(master->thread, "thread_server", thread_server, master,
 				  RTDM_TASK_HIGHEST_PRIORITY-3,0 )) != 0) {
-		EC_MASTER_ERR(master, "Failed to start master task!\n");
-		return -1;
+			EC_MASTER_ERR(master, "Failed to start master task!\n");
+			return -1;
+		}
+		server_running = 1;
+	} else {
+	
+		run_thread.func = thread_func;
+		run_thread.pre = master;
+		rtdm_stop = 0;
+		rtdm_waitqueue_signal(&start_angain);
 	}
 
 #else
@@ -642,12 +680,15 @@ void ec_master_thread_stop(
 
     EC_MASTER_DBG(master, 1, "Stopping master thread.\n");
 #ifdef EC_RTNET
-    rtdm_task_destroy(master->thread);
-    ec_kfree(master->thread);
+    rtdm_stop = 1;	
+    rtdm_wait(&stop_done);
+
+   //  rtdm_task_destroy(master->thread);
+   // ec_kfree(master->thread);
 #else
     kthread_stop(master->thread);
-#endif
     master->thread = NULL;
+#endif
     EC_MASTER_INFO(master, "Master thread exited.\n");
 
     if (master->fsm_datagram.state != EC_DATAGRAM_SENT) {
@@ -655,7 +696,7 @@ void ec_master_thread_stop(
     }
     sleep_jiffies = max(HZ / 100, 1); // 10 ms, at least 1 jiffy
 #ifdef EC_RTNET
-    rtdm_task_sleep((nanosecs_rel_t)(sleep_jiffies * (1000000000L / HZ)));
+//    rtdm_task_sleep((nanosecs_rel_t)(sleep_jiffies * (1000000000L / HZ)));
 #else
     // wait for FSM datagram
     schedule_timeout(sleep_jiffies);
@@ -1587,7 +1628,7 @@ static int ec_master_idle_thread(void *priv_data)
             " max data size=%zu\n", master->send_interval,
             master->max_queue_size);
 #ifdef EC_RTNET
-    while (!rtdm_task_should_stop()) {
+    while (!rtdm_stop) {
 #else
     while (!kthread_should_stop()) {
 #endif
@@ -1660,17 +1701,16 @@ static int ec_master_operation_thread(void *priv_data)
 {
     ec_master_t *master = (ec_master_t *) priv_data;
 
-    EC_MASTER_DBG(master, 1, "Operation thread running"
-            " with fsm interval = %u us, max data size=%zu\n",
+    printk("Operation thread running"
+            " with fsm interval = %u us, max data size=%zu\\\\\\\\n",
             master->send_interval, master->max_queue_size);
 
 #ifdef EC_RTNET
-    while (!rtdm_task_should_stop()) {
+    while (!rtdm_stop) {
 #else
     while (!kthread_should_stop()) {
 #endif
         ec_datagram_output_stats(&master->fsm_datagram);
-
         if (master->injection_seq_rt == master->injection_seq_fsm) {
             // output statistics
             ec_master_output_stats(master);
@@ -1693,7 +1733,7 @@ static int ec_master_operation_thread(void *priv_data)
 
 #ifdef EC_RTNET
         if (ec_fsm_master_idle(&master->fsm)) {
-		rtdm_task_sleep(master->send_interval * 1000);
+		rtdm_task_sleep(500000);
 	}
 	else{
             rtdm_task_sleep(500000);
