@@ -30,11 +30,13 @@
 SUBDIRS = \
 	ccat \
 	e1000 \
+	dpaa_im \
 	e1000e
 
 DIST_SUBDIRS = \
 	ccat \
 	e1000 \
+	dpaa_im \
 	e1000e
 
 # using HEADERS to enable tags target

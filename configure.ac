@@ -247,6 +247,29 @@ fi
 AC_SUBST(KERNEL_8139TOO,[$kernel8139too])
 
 #------------------------------------------------------------------------------
+# dpaa driver
+#------------------------------------------------------------------------------
+
+AC_ARG_ENABLE([dpaa_im],
+    AS_HELP_STRING([--enable-dpaa_im],
+                   [Enable DPAA IM driver]),
+    [
+        case "${enableval}" in
+            yes) enabledpaa=1
+                ;;
+            no) enableedpaa=0
+                ;;
+            *) AC_MSG_ERROR([Invalid value for --enable-dpaa_im])
+                ;;
+        esac
+    ],
+    [enabledpaa=0] # disabled by default
+)
+
+AM_CONDITIONAL(ENABLE_DPAA_IM, test "x$enabledpaa" = "x1")
+AC_SUBST(ENABLE_DPAA_IM,[$enabledpaa])
+
+#------------------------------------------------------------------------------
 # e100 driver
 #------------------------------------------------------------------------------
 
@@ -1102,6 +1125,8 @@ AC_CONFIG_FILES([
         devices/e1000/Makefile
         devices/e1000e/Kbuild
         devices/e1000e/Makefile
+		devices/dpaa_im/Kbuild
+		devices/dpaa_im/Makefile
         ethercat.spec
         examples/Kbuild
         examples/Makefile
