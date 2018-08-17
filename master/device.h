@@ -38,7 +38,8 @@
 #define __EC_DEVICE_H__
 
 #include <linux/interrupt.h>
-
+#include <linux/time64.h>
+#include <linux/timekeeping.h>
 #include "../devices/ecdev.h"
 #include "globals.h"
 
@@ -49,6 +50,7 @@
  * send the same data twice, if it is called twice.
  */
 #define EC_TX_RING_SIZE 0x10
+#define EC_TIMESTAMP_RING_SIZE 10
 
 #ifdef EC_DEBUG_IF
 #include "debug.h"
@@ -69,6 +71,27 @@ typedef struct {
 } ec_debug_frame_t;
 
 #endif
+#define  set_send_timestamp(ecdev) \
+       do { \
+          if (ecdev->send_index < EC_TIMESTAMP_RING_SIZE){\
+             if (!ecdev->send_index) \
+                ecdev->received_index = 0; \
+         ecdev->send_time[ecdev->send_index++] = ktime_get_raw_fast_ns();}\
+       } while(0)         
+
+#define  set_receive_timestamp(ecdev) \
+       do { \
+          if (ecdev->received_index < EC_TIMESTAMP_RING_SIZE){\
+            if (!ecdev->received_index) \
+                ecdev->poll_index = 0; \
+         ecdev->received_time[ecdev->received_index++] = ktime_get_raw_fast_ns();}\
+      } while(0)         
+
+#define  set_poll_timestamp(ecdev) \
+       do { \
+          if (ecdev->poll_index < EC_TIMESTAMP_RING_SIZE){\
+            ecdev->poll_time[ecdev->poll_index++] = ktime_get_raw_fast_ns();}\
+       } while(0)         
 
 /*****************************************************************************/
 
@@ -95,6 +118,16 @@ struct ec_device
     struct timeval timeval_poll;
 #endif
     unsigned long jiffies_poll; /**< jiffies of last poll */
+
+    u64 send_time[EC_TIMESTAMP_RING_SIZE]; /**< send timestamp*/
+    u64 received_time[EC_TIMESTAMP_RING_SIZE]; /**< received timestamp*/
+    u64 poll_time[EC_TIMESTAMP_RING_SIZE]; /**< poll timestamp*/
+    u64 last_transmit_time;
+    u64 last_cycle_time;
+    u64 last_poll_time;
+    unsigned int send_index;
+    unsigned int received_index;
+    unsigned int poll_index;
 
     // Frame statistics
     u64 tx_count; /**< Number of frames sent. */

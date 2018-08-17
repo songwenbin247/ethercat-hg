@@ -79,6 +79,9 @@ int ec_device_init(
     device->module = NULL;
     device->open = 0;
     device->link_state = 0;
+    device->send_index = 0;
+    device->received_index = 0;
+    device->poll_index = 0;
     for (i = 0; i < EC_TX_RING_SIZE; i++) {
         device->tx_skb[i] = NULL;
     }

@@ -37,6 +37,9 @@
 #include <linux/device.h>
 #include <linux/err.h>
 
+#include <linux/proc_fs.h>
+#include <linux/seq_file.h>
+
 #include "globals.h"
 #include "master.h"
 #include "device.h"
@@ -45,12 +48,21 @@
 
 #define MAX_MASTERS 32 /**< Maximum number of masters. */
 
+#define IGH_EC_PROC_DIR "ethercat"
+#define IGH_EC_PROC_NAME "igh_ec_performance_log"
+
 /*****************************************************************************/
 
 int __init ec_init_module(void);
 void __exit ec_cleanup_module(void);
 
 static int ec_mac_parse(uint8_t *, const char *, int);
+
+static int igh_ec_proc_show(struct seq_file *m, void *v);
+static int igh_ec_proc_open(struct inode *inode, struct file *file);
+static ssize_t igh_ec_proc_read(struct file *file, char __user *buf, size_t size, loff_t *ppos);
+static int igh_ec_proc_init(void);
+static void igh_ec_proc_exit(void);
 
 /*****************************************************************************/
 
@@ -69,6 +81,15 @@ struct class *class; /**< Device class. */
 static uint8_t macs[MAX_MASTERS][2][ETH_ALEN]; /**< MAC addresses. */
 
 char *ec_master_version_str = EC_MASTER_VERSION; /**< Version string. */
+
+static struct file_operations igh_ec_proc_fops = {
+	.owner	= THIS_MODULE,
+	.open	= igh_ec_proc_open,
+	.release = single_release,
+	.read	= igh_ec_proc_read,
+	.llseek	= seq_lseek,
+};
+struct proc_dir_entry *igh_ec_proc_dir = NULL;
 
 /*****************************************************************************/
 
@@ -155,6 +176,8 @@ int __init ec_init_module(void)
             goto out_free_masters;
     }
 
+    igh_ec_proc_init();
+
     EC_INFO("%u master%s waiting for devices.\n",
             master_count, (master_count == 1 ? "" : "s"));
     return ret;
@@ -193,6 +216,8 @@ void __exit ec_cleanup_module(void)
 
     if (master_count)
         unregister_chrdev_region(device_number, master_count);
+
+    igh_ec_proc_exit();
 
     EC_INFO("Master module cleaned up.\n");
 }
@@ -640,6 +665,67 @@ void ecrt_release_master(ec_master_t *master)
 unsigned int ecrt_version_magic(void)
 {
     return ECRT_VERSION_MAGIC;
+}
+
+/*****************************************************************************/
+
+static int igh_ec_proc_show(struct seq_file *m, void *v)
+{
+	return 0;
+}
+
+static int igh_ec_proc_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, igh_ec_proc_show, NULL);
+}
+
+ssize_t igh_ec_proc_read(struct file *file, char __user *buf, size_t len, loff_t *off)
+{
+    int len_copy, ret;
+    static char igh_ec_performance_info[32];
+
+    ec_performance_info_t time;
+    ec_master_t *master;
+
+    master = &masters[0];
+    ecrt_master_get_timestamp(master, &time);
+
+    sprintf(igh_ec_performance_info, "%d\t%d\t%d\t\n", time.transmit_time, time.poll_time, time.cycle_time);
+
+    if ((file->f_pos + len) > strlen(igh_ec_performance_info))
+        len_copy = strlen(igh_ec_performance_info) - file->f_pos;
+    else
+        len_copy = len;
+
+    if (len_copy == 0)
+        return 0;
+
+    ret = copy_to_user(buf, igh_ec_performance_info, len_copy);
+    *off += len_copy - ret;
+    return len_copy - ret;
+}
+
+static int igh_ec_proc_init(void)
+{
+	struct proc_dir_entry* file;
+    igh_ec_proc_dir = proc_mkdir(IGH_EC_PROC_DIR, NULL);
+    if (igh_ec_proc_dir == NULL) {
+        printk("%s proc create %s failed\n", __func__, IGH_EC_PROC_DIR);
+        return -EINVAL;
+    }
+	file = proc_create(IGH_EC_PROC_NAME, 0777, igh_ec_proc_dir, &igh_ec_proc_fops);
+	if (!file) {
+        printk("%s proc_create failed!\n", __func__);
+	    return -ENOMEM;
+    }
+
+	return 0;
+}
+
+static void igh_ec_proc_exit(void)
+{
+	remove_proc_entry(IGH_EC_PROC_NAME, igh_ec_proc_dir);
+	remove_proc_entry(IGH_EC_PROC_DIR, NULL);
 }
 
 /*****************************************************************************/

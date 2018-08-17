@@ -52,6 +52,7 @@
 struct ec_device;
 typedef struct ec_device ec_device_t; /**< \see ec_device */
 
+
 /** Device poll function type.
  */
 typedef void (*ec_pollfunc_t)(struct net_device *);

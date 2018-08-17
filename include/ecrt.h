@@ -509,6 +509,16 @@ typedef struct {
 
 /*****************************************************************************/
 
+/** performance information.
+*/
+typedef struct {
+  uint32_t poll_time;
+  uint32_t cycle_time;
+  uint32_t transmit_time;
+} ec_performance_info_t;
+
+/*****************************************************************************/
+
 /** Request state.
  *
  * This is used as return type for ecrt_sdo_request_state() and
@@ -2035,6 +2045,11 @@ void ecrt_reg_request_read(
         ec_reg_request_t *req, /**< Register request. */
         uint16_t address, /**< Register address. */
         size_t size /**< Size to write. */
+        );
+
+int ecrt_master_get_timestamp(
+        ec_master_t *master, /**< EtherCAT master. */
+        ec_performance_info_t *time /**< performance info */
         );
 
 /*****************************************************************************/
