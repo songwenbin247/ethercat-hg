@@ -3273,11 +3273,57 @@ void ecrt_master_reset(ec_master_t *master)
 int ecrt_master_get_timestamp(ec_master_t *master,
         ec_performance_info_t *time)
 {
+    int i = 0;
+    int sum_transmit = 0, sum_cycle = 0, sum_poll = 0;
+    int cycle = 0, cycle_count = 0;
     ec_device_t *device = &master->devices[EC_DEVICE_MAIN];
-    memset(time, 0, sizeof(*time)); 
-    memcpy(time->transmit_time, device->send_time, sizeof(u64) * device->send_index);    
-    memcpy(time->cycle_time, device->received_time, sizeof(u64) * device->received_index);    
-    memcpy(time->poll_time, device->poll_time, sizeof(u64) * device->poll_index);    
+    int times_len;
+   
+    times_len = device->send_index > device->received_index ? 
+	    	   device->received_index : device->send_index; 
+    for (i = 0; i < times_len; i++) {
+        if (i > 0) {
+            cycle = device->send_time[i] - device->send_time[i-1];
+            if (cycle > 20000){
+		cycle_count++;
+	    	sum_cycle += cycle;
+	    }
+        }
+	sum_transmit += device->received_time[i] - device->send_time[i];
+    }
+    
+    if (!sum_transmit) {
+        time->transmit_time  = device->last_transmit_time;
+    }
+    else {
+        time->transmit_time  = sum_transmit / times_len;
+        device->last_transmit_time = time->transmit_time;
+    
+    }
+    
+    if (!sum_cycle) {
+        time->cycle_time  = device->last_cycle_time;
+    }
+    else {
+        time->cycle_time  = sum_cycle / cycle_count;
+        device->last_cycle_time = time->cycle_time;
+    } 
+    
+    times_len = device->send_index > device->poll_index ? 
+	    	   device->poll_index : device->send_index; 
+
+    for (i = 0; i < times_len; i++) {
+	sum_poll += device->poll_time[i] - device->send_time[i];
+    }
+    
+    if (!sum_poll) {
+        time->poll_time  = device->last_poll_time;
+    }
+    else {
+        time->poll_time  = sum_poll / times_len;
+        device->last_poll_time = time->poll_time;
+    } 
+
     device->poll_index = 0;
     device->send_index = 0;
     device->received_index = 0;

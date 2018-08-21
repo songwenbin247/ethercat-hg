@@ -512,9 +512,9 @@ typedef struct {
 /** performance information.
 */
 typedef struct {
-  uint64_t poll_time[10];
-  uint64_t cycle_time[10];
-  uint64_t transmit_time[10];
+  uint32_t poll_time;
+  uint32_t cycle_time;
+  uint32_t transmit_time;
 } ec_performance_info_t;
 
 /*****************************************************************************/

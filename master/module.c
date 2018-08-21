@@ -681,20 +681,17 @@ static int igh_ec_proc_open(struct inode *inode, struct file *file)
 
 ssize_t igh_ec_proc_read(struct file *file, char __user *buf, size_t len, loff_t *off)
 {
-    int len_copy, ret, offset = 0;
-    static char igh_ec_performance_info[2048];
-    int i;
+    int len_copy, ret;
+    static char igh_ec_performance_info[32];
+
     ec_performance_info_t time;
     ec_master_t *master;
 
     master = &masters[0];
-    if(file->f_pos == 0){
-    	ecrt_master_get_timestamp(master, &time);
-    	memset(igh_ec_performance_info, 0 , 2048);	
-    	for (i = 0; i < 10; i++){
-    		offset += sprintf(igh_ec_performance_info + offset, "%llu\t%llu\t%llu\t\n", time.transmit_time[i], time.poll_time[i], time.cycle_time[i]);
-    	}
-    }
+    ecrt_master_get_timestamp(master, &time);
+
+    sprintf(igh_ec_performance_info, "%d\t%d\t%d\t\n", time.transmit_time, time.poll_time, time.cycle_time);
+
     if ((file->f_pos + len) > strlen(igh_ec_performance_info))
         len_copy = strlen(igh_ec_performance_info) - file->f_pos;
     else
